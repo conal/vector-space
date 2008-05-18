@@ -1,0 +1,35 @@
+Name:                vector-space
+Version:             0.0
+Synopsis: 	     Vector & affine spaces, plus 
+Category:            math
+Description:
+  vector-space provides classes and generic operations for vector
+  spaces and affine spaces.  It also defines a type of infinite towers
+  of generalized derivatives.  A generalized derivative is a linear
+  transformation rather than one of the usual concrete representations
+  (scalars, vectors, matrices, ...).
+  .
+  Project wiki page: <http://haskell.org/haskellwiki/vector-space>
+  .
+  The module documentation pages have links to colorized source code and
+  to wiki pages where you can read and contribute user comments.  Enjoy!
+  .
+  &#169; 2008 by Conal Elliott; BSD3 license.
+Author:              Conal Elliott 
+Maintainer:          conal@conal.net
+Homepage:            http://haskell.org/haskellwiki/vector-space
+Package-Url:	     http://darcs.haskell.org/vector-space
+Copyright:           (c) 2007-2008 by Conal Elliott
+License:             BSD3
+Stability:           experimental
+build-type:	     Simple
+Hs-Source-Dirs:      src
+Extensions:          
+Build-Depends:       base
+Exposed-Modules:     
+		     Data.VectorSpace
+		     Data.Derivative
+		     Data.AffineSpace
+		     Data.NumInstances
+		     
+ghc-options:         -Wall -O2
