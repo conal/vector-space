@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.0
+Version:             0.0.1
 Synopsis: 	     Vector & affine spaces, plus 
 Category:            math
 Description:
@@ -18,7 +18,7 @@ Description:
 Author:              Conal Elliott 
 Maintainer:          conal@conal.net
 Homepage:            http://haskell.org/haskellwiki/vector-space
-Package-Url:	     http://darcs.haskell.org/vector-space
+Package-Url:	     http://code.haskell.org/vector-space
 Copyright:           (c) 2007-2008 by Conal Elliott
 License:             BSD3
 Stability:           experimental
