@@ -22,7 +22,7 @@ module Data.VectorSpace
   ) where
 
 import Control.Applicative
-
+import Data.Complex hiding (magnitude)
 
 infixr 9 :-*
 infixr 7 *^, ^/, <.>
@@ -109,6 +109,20 @@ instance VectorSpace Float Float where
 
 instance InnerSpace Float Float where
   (<.>) = (*)
+
+instance (RealFloat v, VectorSpace v s) => VectorSpace (Complex v) s where
+  zeroV       = zeroV :+ zeroV
+  s*^(u :+ v) = s*^u :+ s*^v
+  (^+^)       = (+)
+  negateV     = negate
+
+instance (RealFloat v, InnerSpace v s, VectorSpace s s')
+     => InnerSpace (Complex v) s where
+  (u :+ v) <.> (u' :+ v') = (u <.> u') ^+^ (v <.> v')
+
+-- Hm.  The 'RealFloat' constraint is unfortunate here.  It's due to a
+-- questionable decision to place 'RealFloat' into the definition of the
+-- 'Complex' /type/, rather than in functions and instances as needed.
 
 -- With UndecidableInstances, I get
 --   Illegal instance declaration for `VectorSpace (u, v) s' (the

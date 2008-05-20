@@ -15,7 +15,8 @@
 
 module Data.Derivative
   (
-    (:>)(..), (:~>), dZero, dConst, dId, bilinearD
+    (:>)(..), (:~>), dZero, dConst, dId
+  , linearD, bilinearD
   , (@.), (>-<)
   ) where
 
@@ -85,12 +86,12 @@ dId = linearD id
 -- or
 --   dId v = D v dConst
 
--- Every linear function has a constant derivative equal to the function
+-- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
 linearD :: VectorSpace v s => (u :-* v) -> (u :~> v)
 linearD f u = D (f u) (dConst . f)
 
--- Derivative tower for applying a bilinear function, such as
+-- | Derivative tower for applying a bilinear function, such as
 -- multiplication.
 bilinearD :: VectorSpace w s =>
              (u -> v -> w) -> (t :> u) -> (t :> v) -> (t :> w)
@@ -116,7 +117,7 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
     D c0 c' = h b0
 
 
--- Specialized chain rule.
+-- | Specialized chain rule.
 (>-<) :: VectorSpace b s => (b -> b) -> ((a :> b) -> (a :> s))
       -> (a :> b) -> (a :> b)
 f >-< f' = \ b@(D b0 b') -> D (f b0) ((f' b *^) . b')

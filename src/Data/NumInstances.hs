@@ -70,6 +70,8 @@ instance Floating b => Floating (a->b) where
 lift2 :: (a->u) -> (b->v) -> (a,b) -> (u,v)
 lift2 f g (a,b) = (f a, g b)
 
+-- Equivalently, lift2 = (***)
+
 instance (Num a, Num b) => Num (a,b) where
   fromInteger n   = (fromInteger n, fromInteger n)
   (a,b) + (a',b') = (a+a',b+b')
