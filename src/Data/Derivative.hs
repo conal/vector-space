@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeOperators, FlexibleInstances, MultiParamTypeClasses
-           , UndecidableInstances
-  #-}
+{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -17,7 +15,8 @@
 
 module Data.Derivative
   (
-    (:>)(..), (::>), dZero, dConst, dId, bilinearD, (>*<), (>-<)
+    (:>)(..), (:~>), dZero, dConst, dId, bilinearD
+  , (@.), (>-<)
   ) where
 
 import Control.Applicative
@@ -26,18 +25,26 @@ import Data.VectorSpace
 import Data.NumInstances ()
 
 
-infixr 9 `D`
+infixr 9 `D`, @.
+infix  0 >-<
 
--- | Tower of derivatives.  Values look like @b `D` b' `D` b'' `D` ...@.
--- The type of an @n@th derivative is @a :-* a :-* ... :-* b@, where there
--- are @n@ levels of @a :-*@, i.e., @(a :-*)^n b@.
+
+-- | Tower of derivatives.
 -- 
 -- Warning, the 'Applicative' instance is missing its 'pure' (due to a
 -- 'VectorSpace' type constraint).  Use 'dConst' instead.
-data a :> b = D b (a :> (a :-* b))
+data a :> b = D { dVal :: b, dDeriv :: a :-* (a :> b) }
+
+-- data a :> b = D b (a :-* (a :> b))
 
 -- | Infinitely differentiable functions
-type a ::> b = a -> (a:>b)
+type a :~> b = a -> (a:>b)
+
+-- So we could define
+-- 
+--   data a :> b = D b (a :~> b)
+-- 
+-- with the restriction that the a :~> b is linear
 
 instance Functor ((:>) a) where
   fmap f (D b b') = D (f b) (f `onDer` b')
@@ -45,10 +52,12 @@ instance Functor ((:>) a) where
 -- I think fmap will be meaningful only with *linear* functions.
 
 -- Lift a function to act on values inside of derivative towers
-onDer :: (b -> c) -> (a :> (a :-* b)) -> (a :> (a :-* c))
-onDer f = fmap (f .)
+onDer :: (b -> c) -> (a :~> b) -> (a :~> c)
+onDer = fmap.fmap
 
--- Or fmap.(.), or fmap.fmap
+-- Handy for missing methods.
+noOv :: String -> a
+noOv op = error (op ++ ": not defined on a :> b")
 
 instance Applicative ((:>) a) where
     -- pure = dConst    -- not!  see below.
@@ -60,18 +69,26 @@ instance Applicative ((:>) a) where
 -- use 'pure', okay?  Alternatively, I could define the '(<*>)' (naming it
 -- something else) and then say @foo <$> p <*^> q <*^> ...@.
 
--- | Derivative tower full of 'zeroV'.
-dZero :: VectorSpace b s => a:>b
-dZero = w where w = zeroV `D` dZero
-
 -- | Constant derivative tower.
 dConst :: VectorSpace b s => b -> a:>b
-dConst b = b `D` dZero
+dConst b = b `D` const dZero
+
+-- | Derivative tower full of 'zeroV'.
+dZero :: VectorSpace b s => a:>b
+dZero = dConst zeroV
 
 -- | Tower of derivatives of the identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
 dId :: VectorSpace v s => v -> v:>v
-dId v = w where w = v `D` dConst id
+dId = linearD id
+
+-- or
+--   dId v = D v dConst
+
+-- Every linear function has a constant derivative equal to the function
+-- itself (as a linear map).
+linearD :: VectorSpace v s => (u :-* v) -> (u :~> v)
+linearD f u = D (f u) (dConst . f)
 
 -- Derivative tower for applying a bilinear function, such as
 -- multiplication.
@@ -79,11 +96,6 @@ bilinearD :: VectorSpace w s =>
              (u -> v -> w) -> (t :> u) -> (t :> v) -> (t :> w)
 bilinearD op (D s s') (D u u') =
   D (s `op` u) ((s `op`) `onDer` u' ^+^ (`op` u) `onDer` s')
-
-
--- Handy for missing methods.
-noOv :: String -> a
-noOv op = error (op ++ ": not defined on a :> b")
 
 -- I'm not sure about the next three, which discard information
 instance Show b => Show (a :> b) where show    = noOv "show"
@@ -96,53 +108,18 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
   negateV = fmap      negateV
   (^+^)   = liftA2    (^+^)
 
-
-infix 0 >*<
-
--- | Convenient encapsulation of the chain rule.  Combines value function
--- and derivative function, to get a infinitely differentiability
--- function, which is then applied to a derivative tower.
-(>*<) :: (b -> c) -> (b -> (b :-* c))
-      -> (a :> b) -> (a :> c)
-f >*< f' = \ (D u u') -> D (f u) ((f' u .) <$> u')
-
--- Compare with:
--- 
---   f >-< f' = \ (D u u') -> D (f u) (f' u *^ u')
--- 
--- which is equivalent to
--- 
---   f >-< f' = \ (D u u') -> D (f u) ((f' u *^) <$> u')
--- 
--- thanks to the 'VectorSpace' instance of @a :> b@
-
--- Also, we could have said
--- 
---   f >*< f' = \ (D u u') -> D (f u) ((fmap.fmap) (f' u) u')
--- 
--- because (.) and (<$>) are both 'fmap'.
+-- | Chain rule.
+(@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
+(h @. g) a0 = D c0 (c' @. b')
+  where
+    D b0 b' = g a0
+    D c0 c' = h b0
 
 
--- Specialized chain rule.  Scalar range.
-infix 0 >-<
--- | Specialized form of '(>*<)', convenient for functions with scalar
--- values.  Uses the more common view of derivatives as rate-of-change.
-(>-<) :: VectorSpace b s => (b -> b) -> (b -> s)
+-- Specialized chain rule.
+(>-<) :: VectorSpace b s => (b -> b) -> ((a :> b) -> (a :> s))
       -> (a :> b) -> (a :> b)
-f >-< f' = f >*< ((*^) . f')
-
--- Equivalently:
--- 
---   f >-< f' = f >:< \ u -> (f' u *^)
--- or
---            = \ (D u u') -> D (f u) (f' u *^ u')
--- 
--- Corresponding to the usual chain rule for scalar domains:
---   D (f . g) x = D f (g x) *^ D g x
-
-
--- Note that the two arguments of (>*<) have the same info as @a ::> b@.
--- Define composition functions as I did in DifL.
+f >-< f' = \ b@(D b0 b') -> D (f b0) ((f' b *^) . b')
 
 
 instance (Num b, VectorSpace b b) => Num (a:>b) where
@@ -177,48 +154,3 @@ instance (Floating b, VectorSpace b b) => Floating (a:>b) where
   asinh = asinh >-< recip (sqrt (1+sqr))
   acosh = acosh >-< recip (- sqrt (sqr-1))
   atanh = atanh >-< recip (1-sqr)
-
-
-
-
--- infixl 9 @$
--- -- Application, with chain rule
--- (@$) :: b ::> c -> a :> b -> a :> c
--- g @$ u = D c ((fmap.fmap) c' b')
---  where
---    D b b' = u
---    D c c' = g b
-
--- b  :: b
--- b' :: a :> (a :-* b)
-
--- c  :: c
--- c' :: b :> (b :-* c)
-
--- b  = f x
--- b' = D f x
-
--- c  = g (f x)
--- c' = D g (f x)
-
-
--- D (g . f) x = D g (f x) . D f x
---  == c' . b'
-
-
-
-
--- g @$ D b b' = D c (c' . b')
---  where
---    D c c' = g b
-
-
--- -- Composition, with chain rule
--- infixr 9 @.
--- (@.) :: b ::> c -> a ::> b -> a ::> c
--- (g @. f) a = g @$ f a
-
--- (g @. f) a = D c (c' . b')
---  where
---    D b b' = f a
---    D c c' = g b

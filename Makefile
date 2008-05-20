@@ -2,5 +2,6 @@
 
 server = code.haskell.org
 server-dir = /srv/code
+server-url-dir =
 
 include ../my-cabal-make.inc

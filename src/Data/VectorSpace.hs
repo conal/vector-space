@@ -23,6 +23,8 @@ module Data.VectorSpace
 
 import Control.Applicative
 
+
+infixr 9 :-*
 infixr 7 *^, ^/, <.>
 infixl 7 ^*
 infixl 6 ^+^, ^-^
