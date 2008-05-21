@@ -156,9 +156,9 @@ instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
 -- Standard instance for an applicative functor applied to a vector space.
 instance VectorSpace v s => VectorSpace (a->v) s where
   zeroV   = pure   zeroV
-  (*^) s  = fmap (s *^)
+  (*^) s  = fmap   (s *^)
   (^+^)   = liftA2 (^+^)
-  negateV = fmap negateV
+  negateV = fmap   negateV
 
 -- I don't know how to make the InnerSpace class work out, because the
 -- inner product would have to combine two vector *functions* into a

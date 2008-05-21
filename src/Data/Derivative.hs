@@ -15,7 +15,8 @@
 
 module Data.Derivative
   (
-    (:>)(..), (:~>), dZero, dConst, dId
+    (:>)(..), (:~>), dZero, dConst
+  , idD, fstD, sndD
   , linearD, bilinearD
   , (@.), (>-<)
   ) where
@@ -80,8 +81,8 @@ dZero = dConst zeroV
 
 -- | Tower of derivatives of the identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-dId :: VectorSpace v s => v -> v:>v
-dId = linearD id
+idD :: VectorSpace u s => u :~> u
+idD = linearD id
 
 -- or
 --   dId v = D v dConst
@@ -90,6 +91,15 @@ dId = linearD id
 -- itself (as a linear map).
 linearD :: VectorSpace v s => (u :-* v) -> (u :~> v)
 linearD f u = D (f u) (dConst . f)
+
+
+-- Other examples of linear functions
+
+fstD :: VectorSpace a s => (a,b) :~> a
+fstD = linearD fst
+
+sndD :: VectorSpace b s => (a,b) :~> b
+sndD = linearD snd
 
 -- | Derivative tower for applying a bilinear function, such as
 -- multiplication.
