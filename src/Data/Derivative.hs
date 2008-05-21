@@ -17,7 +17,7 @@ module Data.Derivative
   (
     (:>)(..), (:~>), dZero, dConst
   , idD, fstD, sndD
-  , linearD, bilinearD
+  , linearD, distribD
   , (@.), (>-<)
   ) where
 
@@ -49,13 +49,9 @@ type a :~> b = a -> (a:>b)
 -- with the restriction that the a :~> b is linear
 
 instance Functor ((:>) a) where
-  fmap f (D b b') = D (f b) (f `onDer` b')
+  fmap f (D b b') = D (f b) ((fmap.fmap) f b')
 
 -- I think fmap will be meaningful only with *linear* functions.
-
--- Lift a function to act on values inside of derivative towers
-onDer :: (b -> c) -> (a :~> b) -> (a :~> c)
-onDer = fmap.fmap
 
 -- Handy for missing methods.
 noOv :: String -> a
@@ -79,7 +75,7 @@ dConst b = b `D` const dZero
 dZero :: VectorSpace b s => a:>b
 dZero = dConst zeroV
 
--- | Tower of derivatives of the identity function.  Sometimes called "the
+-- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
 idD :: VectorSpace u s => u :~> u
 idD = linearD id
@@ -95,18 +91,27 @@ linearD f u = D (f u) (dConst . f)
 
 -- Other examples of linear functions
 
+-- | Differentiable version of 'fst'
 fstD :: VectorSpace a s => (a,b) :~> a
 fstD = linearD fst
 
+-- | Differentiable version of 'snd'
 sndD :: VectorSpace b s => (a,b) :~> b
 sndD = linearD snd
 
--- | Derivative tower for applying a bilinear function, such as
--- multiplication.
-bilinearD :: VectorSpace w s =>
-             (u -> v -> w) -> (t :> u) -> (t :> v) -> (t :> w)
-bilinearD op (D s s') (D u u') =
-  D (s `op` u) ((s `op`) `onDer` u' ^+^ (`op` u) `onDer` s')
+-- | Derivative tower for applying a binary function that distributes over
+-- addition, such as multiplication.
+distribD :: (VectorSpace u s) =>
+             (b -> c -> u) -> ((a :> b) -> (a :> c) -> (a :> u))
+          -> (a :> b) -> (a :> c) -> (a :> u)
+distribD op opD u@(D u0 u') v@(D v0 v') =
+  D (u0 `op` v0) ((u `opD`) . v' ^+^ (`opD` v) . u')
+
+-- Equivalently,
+-- 
+--   distribD op opD u@(D u0 u') v@(D v0 v') =
+--     D (u0 `op` v0) (\ da -> (u `opD` v' da) ^+^ (u' da `opD` v))
+
 
 -- I'm not sure about the next three, which discard information
 instance Show b => Show (a :> b) where show    = noOv "show"
@@ -114,10 +119,10 @@ instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
 instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
-  zeroV   = dConst    zeroV    -- or dZero
-  (*^)    = bilinearD (*^)
-  negateV = fmap      negateV
-  (^+^)   = liftA2    (^+^)
+  zeroV   = dConst   zeroV    -- or dZero
+  (*^)    = distribD (*^) (*^)
+  negateV = fmap     negateV
+  (^+^)   = liftA2   (^+^)
 
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
@@ -128,17 +133,20 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
 
 
 -- | Specialized chain rule.
-(>-<) :: VectorSpace b s => (b -> b) -> ((a :> b) -> (a :> s))
-      -> (a :> b) -> (a :> b)
-f >-< f' = \ b@(D b0 b') -> D (f b0) ((f' b *^) . b')
+(>-<) :: VectorSpace u s => (u -> u) -> ((a :> u) -> (a :> s))
+      -> (a :> u) -> (a :> u)
 
+f >-< f' = \ u@(D u0 u') -> D (f u0) ((f' u *^) . u')
+
+-- Equivalently:
+-- 
+--   f >-< f' = \ u@(D u0 u') -> D (f u0) (\ da -> f' u *^ u' da)
 
 instance (Num b, VectorSpace b b) => Num (a:>b) where
   fromInteger = dConst . fromInteger
-  (+) = liftA2    (+)
-  (-) = liftA2    (-)
-  (*) = bilinearD (*)
-  
+  (+) = liftA2   (+)
+  (-) = liftA2   (-)
+  (*) = distribD (*) (*)
   negate = negate >-< -1
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
