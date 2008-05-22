@@ -124,6 +124,10 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
   negateV = fmap     negateV
   (^+^)   = liftA2   (^+^)
 
+instance (InnerSpace u s, InnerSpace s s') =>
+     InnerSpace (a :> u) (a :> s) where
+  (<.>) = distribD (<.>) (<.>)
+
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
 (h @. g) a0 = D c0 (c' @. b')
