@@ -21,7 +21,7 @@ module Data.Derivative
   , idD, fstD, sndD
   , linearD, distribD
   , (@.), (>-<)
-  , HasDeriv(..)
+  -- , HasDeriv(..)
   ) where
 
 import Control.Applicative
@@ -39,8 +39,6 @@ infix  0 >-<
 -- Warning, the 'Applicative' instance is missing its 'pure' (due to a
 -- 'VectorSpace' type constraint).  Use 'dConst' instead.
 data a :> b = D { dVal :: b, dDeriv :: a :-* (a :> b) }
-
--- data a :> b = D b (a :-* (a :> b))
 
 -- | Infinitely differentiable functions
 type a :~> b = a -> (a:>b)
@@ -61,9 +59,9 @@ noOv :: String -> a
 noOv op = error (op ++ ": not defined on a :> b")
 
 instance Applicative ((:>) a) where
-    -- pure = dConst    -- not!  see below.
-    pure = noOv "pure.  use dConst instead."
-    D f f' <*> D b b' = D (f b) (liftA2 (<*>) f' b')
+  -- pure = dConst    -- not!  see below.
+  pure = noOv "pure.  use dConst instead."
+  D f f' <*> D b b' = D (f b) (liftA2 (<*>) f' b')
 
 -- Why can't we define 'pure' as 'dConst'?  Because of the extra type
 -- constraint that @VectorSpace b@ (not @a@).  Oh well.  Be careful not to
@@ -185,12 +183,13 @@ instance (Floating b, VectorSpace b b) => Floating (a:>b) where
 
 ----
 
--- | Things with derivatives.
-class HasDeriv a d | a -> d where deriv :: a -> d
+-- -- | Things with derivatives.
+-- class HasDeriv a d | a -> d where deriv :: a -> d
 
-instance HasDeriv (a:>b) (a :-* (a :> b)) where deriv = dDeriv
+-- instance HasDeriv (a:>b) (a :-* (a :> b)) where deriv = dDeriv
 
--- Standard instance for any functor
-instance HasDeriv a d => HasDeriv (x -> a) (x -> d) where
-  deriv = fmap deriv
+-- -- Standard instance for any functor
+-- instance HasDeriv a d => HasDeriv (x -> a) (x -> d) where
+--   deriv = fmap deriv
 
+-- This code compiles fine, but I'm don't know whether it's worth it

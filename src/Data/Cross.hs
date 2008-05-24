@@ -16,7 +16,7 @@
 
 module Data.Cross
   (
-    HasCross(..), normal
+    HasNormal(..), normal
   , One, Two, Three
   , HasCross2(..), HasCross3(..)
   ) where
@@ -26,12 +26,12 @@ import Control.Applicative
 import Data.VectorSpace
 import Data.Derivative
 
--- | Thing with a cross product.
-class HasCross v where cross :: v -> v
+-- | Thing with a normal vector (not necessarily normalized).
+class HasNormal v where normalVec :: v -> v
 
 -- | Normalized normal vector.  See also 'cross.
-normal :: (HasCross v, InnerSpace v s, Floating s) => v -> v
-normal = normalized . cross
+normal :: (HasNormal v, InnerSpace v s, Floating s) => v -> v
+normal = normalized . normalVec
 
 
 -- | Singleton
@@ -58,11 +58,11 @@ instance Num s => HasCross2 (s,s) where
 instance (VectorSpace v s, HasCross2 v) => HasCross2 (a:>v) where
   cross2 = fmap cross2
 
-instance (Num s, VectorSpace s s) => HasCross (One s :> Two s) where
-  cross v = cross2 (deriv v 1)
+instance (Num s, VectorSpace s s) => HasNormal (One s :> Two s) where
+  normalVec v = cross2 (dDeriv v 1)
 
-instance (Num s, VectorSpace s s) => HasCross (Two (One s :> s)) where
-  cross = unpairF . cross . pairF
+instance (Num s, VectorSpace s s) => HasNormal (Two (One s :> s)) where
+  normalVec = unpairF . normalVec . pairF
 
 
 
@@ -76,18 +76,17 @@ instance Num s => HasCross3 (s,s,s) where
 
 -- TODO: Eliminate the 'Num' constraint by using 'VectorSpace' operations.
 
-
 -- 3D cross-product is bilinear
 instance (VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
   cross3 = distribD cross3 cross3
 
-instance (Num s, VectorSpace s s) => HasCross (Two s :> Three s) where
-  cross v = v' (1,0) `cross3` v' (0,1)
+instance (Num s, VectorSpace s s) => HasNormal (Two s :> Three s) where
+  normalVec v = v' (1,0) `cross3` v' (0,1)
    where
      v' = dDeriv v
 
-instance (Num s, VectorSpace s s) => HasCross (Three (Two s :> s)) where
-  cross = untripleF . cross . tripleF
+instance (Num s, VectorSpace s s) => HasNormal (Three (Two s :> s)) where
+  normalVec = untripleF . normalVec . tripleF
 
 
 ---- Could go elsewhere
