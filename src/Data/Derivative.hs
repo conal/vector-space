@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances #-}
+{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
+           , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
+  #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -19,6 +21,7 @@ module Data.Derivative
   , idD, fstD, sndD
   , linearD, distribD
   , (@.), (>-<)
+  , HasDeriv(..)
   ) where
 
 import Control.Applicative
@@ -100,7 +103,8 @@ sndD :: VectorSpace b s => (a,b) :~> b
 sndD = linearD snd
 
 -- | Derivative tower for applying a binary function that distributes over
--- addition, such as multiplication.
+-- addition, such as multiplication.  A bit weaker assumption than
+-- bilinearity.
 distribD :: (VectorSpace u s) =>
              (b -> c -> u) -> ((a :> b) -> (a :> c) -> (a :> u))
           -> (a :> b) -> (a :> c) -> (a :> u)
@@ -177,3 +181,16 @@ instance (Floating b, VectorSpace b b) => Floating (a:>b) where
   asinh = asinh >-< recip (sqrt (1+sqr))
   acosh = acosh >-< recip (- sqrt (sqr-1))
   atanh = atanh >-< recip (1-sqr)
+
+
+----
+
+-- | Things with derivatives.
+class HasDeriv a d | a -> d where deriv :: a -> d
+
+instance HasDeriv (a:>b) (a :-* (a :> b)) where deriv = dDeriv
+
+-- Standard instance for any functor
+instance HasDeriv a d => HasDeriv (x -> a) (x -> d) where
+  deriv = fmap deriv
+

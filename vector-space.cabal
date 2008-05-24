@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.1.3
+Version:             0.1.4
 Synopsis: 	     Vector & affine spaces, plus derivatives
 Category:            math
 Description:
@@ -29,6 +29,7 @@ Build-Depends:       base
 Exposed-Modules:     
 		     Data.VectorSpace
 		     Data.Derivative
+		     Data.Cross
 		     Data.AffineSpace
 		     Data.NumInstances
 		     
