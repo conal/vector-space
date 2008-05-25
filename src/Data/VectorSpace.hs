@@ -40,10 +40,14 @@ class VectorSpace v s | v -> s where
   -- | Additive inverse
   negateV :: v -> v
 
+
 -- | Adds inner (dot) products
 class VectorSpace v s => InnerSpace v s | v -> s where
   -- | Inner/dot product
   (<.>) :: v -> v -> s
+  -- | Test for zeroV, without relying on general equality
+  -- A common definition could be "isZeroV = (== zeroV)".
+  isZeroV :: v -> Bool
 
 -- | Convenience.  Maybe add methods later.
 -- class VectorSpace s s => Scalar s
@@ -87,8 +91,8 @@ magnitude = sqrt . magnitudeSq
 -- | Vector in same direction as given one but with length of one.  If
 -- given the zero vector, then return it.
 normalized :: (InnerSpace v s, Floating s) =>  v -> v
-normalized v | mag /= 0  = v ^/ mag
-             | otherwise = v
+normalized v | isZeroV v = v
+             | otherwise = v ^/ mag
   where
     mag = magnitude v
 
@@ -99,7 +103,8 @@ instance VectorSpace Double Double where
   negateV = negate
 
 instance InnerSpace Double Double where
- (<.>) = (*)
+  (<.>) = (*)
+  isZeroV = (== zeroV)
 
 instance VectorSpace Float Float where
   zeroV   = 0.0
@@ -109,6 +114,7 @@ instance VectorSpace Float Float where
 
 instance InnerSpace Float Float where
   (<.>) = (*)
+  isZeroV = (== zeroV)
 
 instance (RealFloat v, VectorSpace v s) => VectorSpace (Complex v) s where
   zeroV       = zeroV :+ zeroV
@@ -119,6 +125,7 @@ instance (RealFloat v, VectorSpace v s) => VectorSpace (Complex v) s where
 instance (RealFloat v, InnerSpace v s, VectorSpace s s')
      => InnerSpace (Complex v) s where
   (u :+ v) <.> (u' :+ v') = (u <.> u') ^+^ (v <.> v')
+  isZeroV     = (== zeroV)
 
 -- Hm.  The 'RealFloat' constraint is unfortunate here.  It's due to a
 -- questionable decision to place 'RealFloat' into the definition of the
@@ -137,6 +144,7 @@ instance (VectorSpace u s,VectorSpace v s) => VectorSpace (u,v) s where
 instance (InnerSpace u s,InnerSpace v s, VectorSpace s s')
     => InnerSpace (u,v) s where
   (u,v) <.> (u',v') = (u <.> u') ^+^ (v <.> v')
+  isZeroV (u,v)     = isZeroV u && isZeroV v
 
 -- We could use @Num s@ and @(+)@ in place of @VectorSpace s s'@ and @(^+^)@
 -- in the @InnerSpace@ instances for pairs and triples.
@@ -151,6 +159,7 @@ instance (VectorSpace u s,VectorSpace v s,VectorSpace w s)
 instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
     => InnerSpace (u,v,w) s where
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
+  isZeroV (u,v,w)        = isZeroV u && isZeroV v && isZeroV w
 
 
 -- Standard instance for an applicative functor applied to a vector space.

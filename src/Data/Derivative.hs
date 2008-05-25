@@ -116,6 +116,7 @@ distribD op opD u@(D u0 u') v@(D v0 v') =
 
 
 -- I'm not sure about the next three, which discard information
+
 instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
@@ -128,7 +129,8 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
 
 instance (InnerSpace u s, InnerSpace s s') =>
      InnerSpace (a :> u) (a :> s) where
-  (<.>) = distribD (<.>) (<.>)
+  (<.>)           = distribD (<.>) (<.>)
+  isZeroV (D v _) = isZeroV v
 
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
