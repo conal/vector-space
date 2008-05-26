@@ -104,10 +104,12 @@ sndD = linearD snd
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
 distribD :: (VectorSpace u s) =>
-             (b -> c -> u) -> ((a :> b) -> (a :> c) -> (a :> u))
+             (b -> c -> u)
           -> (a :> b) -> (a :> c) -> (a :> u)
-distribD op opD u@(D u0 u') v@(D v0 v') =
-  D (u0 `op` v0) ((u `opD`) . v' ^+^ (`opD` v) . u')
+distribD op = opD
+ where
+   opD u@(D u0 u') v@(D v0 v') =
+     D (u0 `op` v0) ((u `opD`) . v' ^+^ (`opD` v) . u')
 
 -- Equivalently,
 -- 
@@ -123,14 +125,17 @@ instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
 instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
   zeroV   = dConst   zeroV    -- or dZero
-  (*^)    = distribD (*^) (*^)
+  (*^)    = distribD (*^)
   negateV = fmap     negateV
   (^+^)   = liftA2   (^+^)
 
 instance (InnerSpace u s, InnerSpace s s') =>
      InnerSpace (a :> u) (a :> s) where
-  (<.>)           = distribD (<.>) (<.>)
+  (<.>)           = distribD (<.>)
   isZeroV (D v _) = isZeroV v
+
+-- Questionable definition of isZeroV, since derivatives may be nonzero.
+-- It's the right thing for 'normalized' in "Data.VectorSpace".
 
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
@@ -154,7 +159,7 @@ instance (Num b, VectorSpace b b) => Num (a:>b) where
   fromInteger = dConst . fromInteger
   (+) = liftA2   (+)
   (-) = liftA2   (-)
-  (*) = distribD (*) (*)
+  (*) = distribD (*)
   negate = negate >-< -1
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
