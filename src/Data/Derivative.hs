@@ -131,11 +131,7 @@ instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
 
 instance (InnerSpace u s, InnerSpace s s') =>
      InnerSpace (a :> u) (a :> s) where
-  (<.>)           = distribD (<.>)
-  isZeroV (D v _) = isZeroV v
-
--- Questionable definition of isZeroV, since derivatives may be nonzero.
--- It's the right thing for 'normalized' in "Data.VectorSpace".
+  (<.>) = distribD (<.>)
 
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
