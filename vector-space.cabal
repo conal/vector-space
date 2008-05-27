@@ -28,6 +28,8 @@ Extensions:
 Build-Depends:       base
 Exposed-Modules:     
 		     Data.VectorSpace
+		     Data.Maclaurin
+		     Data.Horner
 		     Data.Derivative
 		     Data.Cross
 		     Data.AffineSpace

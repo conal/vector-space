@@ -59,7 +59,7 @@ instance (VectorSpace v s, HasCross2 v) => HasCross2 (a:>v) where
   cross2 = fmap cross2
 
 instance (Num s, VectorSpace s s) => HasNormal (One s :> Two s) where
-  normalVec v = cross2 (dDeriv v 1)
+  normalVec v = cross2 (derivative v 1)
 
 instance (Num s, VectorSpace s s) => HasNormal (Two (One s :> s)) where
   normalVec = unpairF . normalVec . pairF
@@ -83,7 +83,7 @@ instance (VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
 instance (Num s, VectorSpace s s) => HasNormal (Two s :> Three s) where
   normalVec v = v' (1,0) `cross3` v' (0,1)
    where
-     v' = dDeriv v
+     v' = derivative v
 
 instance (Num s, VectorSpace s s) => HasNormal (Three (Two s :> s)) where
   normalVec = untripleF . normalVec . tripleF
