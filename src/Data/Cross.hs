@@ -78,7 +78,7 @@ instance Num s => HasCross3 (s,s,s) where
 
 -- 3D cross-product is bilinear
 instance (VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
-  cross3 = distribD cross3
+  cross3 = distrib cross3
 
 instance (Num s, VectorSpace s s) => HasNormal (Two s :> Three s) where
   normalVec v = v' (1,0) `cross3` v' (0,1)

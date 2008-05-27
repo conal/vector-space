@@ -7,13 +7,13 @@
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
 -- 
--- Indirection module.  Either Data.Maclaurin or Data.Horner
+-- Indirection module.  Either Data.Maclaurin or Data.Horner.
 ----------------------------------------------------------------------
 
 module Data.Derivative
   (
     module Data.Maclaurin
-  -- module Data.Horner
+    -- module Data.Horner
   ) where
 
 import Data.Maclaurin

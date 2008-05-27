@@ -20,7 +20,7 @@ module Data.Maclaurin
     (:>), powVal, derivative
   , (:~>), dZero, dConst
   , idD, fstD, sndD
-  , linearD, distribD
+  , linearD, distrib
   , (@.), (>-<)
   -- , HasDeriv(..)
   ) where
@@ -104,9 +104,9 @@ sndD = linearD snd
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distribD :: (VectorSpace u s) =>
-            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
-distribD op = opD
+distrib :: (VectorSpace u s) =>
+           (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
+distrib op = opD
  where
    opD u@(D u0 u') v@(D v0 v') =
      D (u0 `op` v0) ((u `opD`) . v' ^+^ (`opD` v) . u')
@@ -126,14 +126,14 @@ instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
 instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
-  zeroV   = dConst   zeroV    -- or dZero
-  (*^)    = distribD (*^)
-  negateV = fmap     negateV
-  (^+^)   = liftA2   (^+^)
+  zeroV   = dConst  zeroV    -- or dZero
+  (*^)    = distrib (*^)
+  negateV = fmap    negateV
+  (^+^)   = liftA2  (^+^)
 
 instance (InnerSpace u s, InnerSpace s s') =>
      InnerSpace (a :> u) (a :> s) where
-  (<.>) = distribD (<.>)
+  (<.>) = distrib (<.>)
 
 -- | Chain rule.
 (@.) :: (b :~> c) -> (a :~> b) -> (a :~> c)
@@ -155,9 +155,9 @@ f >-< f' = \ u@(D u0 u') -> D (f u0) ((f' u *^) . u')
 
 instance (Num b, VectorSpace b b) => Num (a:>b) where
   fromInteger = dConst . fromInteger
-  (+) = liftA2   (+)
-  (-) = liftA2   (-)
-  (*) = distribD (*)
+  (+) = liftA2  (+)
+  (-) = liftA2  (-)
+  (*) = distrib (*)
   negate = negate >-< -1
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
