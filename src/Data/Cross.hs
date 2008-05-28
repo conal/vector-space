@@ -29,7 +29,7 @@ import Data.Derivative
 -- | Thing with a normal vector (not necessarily normalized).
 class HasNormal v where normalVec :: v -> v
 
--- | Normalized normal vector.  See also 'cross.
+-- | Normalized normal vector.  See also 'cross'.
 normal :: (HasNormal v, InnerSpace v s, Floating s) => v -> v
 normal = normalized . normalVec
 
@@ -47,7 +47,7 @@ type Three s = (s,s,s)
 class HasCross2 v where cross2 :: v -> v
 
 instance Num s => HasCross2 (s,s) where
-  cross2 (x,y) = (-y,x)  -- or @(-y,x)@?
+  cross2 (x,y) = (-y,x)  -- or @(y,-x)@?
 
 -- TODO: Eliminate the 'Num' constraint by using negateV.
 
@@ -76,7 +76,7 @@ instance Num s => HasCross3 (s,s,s) where
 
 -- TODO: Eliminate the 'Num' constraint by using 'VectorSpace' operations.
 
--- 3D cross-product is bilinear
+-- 3D cross-product is bilinear (curried linear)
 instance (VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
   cross3 = distrib cross3
 

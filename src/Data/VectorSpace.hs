@@ -18,13 +18,13 @@ module Data.VectorSpace
     VectorSpace(..), (^-^), (^/), (^*)
   , InnerSpace(..) --, Scalar
   , lerp, magnitudeSq, magnitude, normalized
-  , (:-*)
+  -- , (:-*)
   ) where
 
 import Control.Applicative
 import Data.Complex hiding (magnitude)
 
-infixr 9 :-*
+-- infixr 9 :-*
 infixr 7 *^, ^/, <.>
 infixl 7 ^*
 infixl 6 ^+^, ^-^
@@ -185,4 +185,4 @@ instance VectorSpace v s => VectorSpace (a->v) s where
 -- functions.  The 'VectorSpace' instance for functions gives the usual
 -- meaning for a vector space of linear transformations.
 
-type a :-* b = a -> b
+-- type a :-* b = a -> b

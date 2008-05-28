@@ -44,23 +44,24 @@ data a :> b = H b (a :-* (a :> b))
 powVal :: (a :> b) -> b
 powVal (H b _) = b
 
+-- Apply successive functions to successive values
+apPow :: [b -> c] -> (a :> b) -> (a :> c)
+apPow [] _ = error "apPow: finite function list"
+apPow (f : fs) (b0 `H` bt) = H (f b0) (apPow fs . bt)
+
+-- Count.  Avoids the 'Enum' requirement of [1..]
+from :: Num s => s -> [s]
+from n = n : from (n+1) 
+
 -- | Derivative of a power series
 derivative :: (VectorSpace b s, Num s) =>
          (a :> b) -> (a :-* (a :> b))
-derivative (H _ bt) = deriv 1 . bt
-
-deriv :: (VectorSpace b s, Num s) =>
-          s -> (a :> b) -> (a :> b)
-deriv n (b0 `H` bt) = H (n *^ b0) (deriv (n+1) . bt)
+derivative (H _ bt) = apPow ((*^) <$> from 1) . bt
 
 -- | Integral of a power series
 integral :: (VectorSpace b s, Fractional s) =>
             b -> (a :-* (a :> b)) -> (a :> b)
-integral b0 bt = H b0 (integ 1 . bt)
-   
-integ :: (VectorSpace b s, Fractional s) =>
-         s -> (a :> b) -> (a :> b)
-integ n (b0 `H` bt) = H (b0 ^/ n) (integ (n+1) . bt)
+integral b0 bt = H b0 (apPow (((*^).recip) <$> from 1) . bt)
 
 -- | Infinitely differentiable functions
 type a :~> b = a -> (a:>b)
@@ -82,7 +83,7 @@ noOv op = error (op ++ ": not defined on a :> b")
 
 instance Applicative ((:>) a) where
   -- pure = dConst    -- not!  see below.
-  pure = noOv "pure.  use dConst instead."
+  pure = noOv "pure"  -- use dConst instead
   H f f' <*> H b b' = H (f b) (liftA2 (<*>) f' b')
 
 -- Why can't we define 'pure' as 'dConst'?  Because of the extra type

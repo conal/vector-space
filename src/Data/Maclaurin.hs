@@ -23,6 +23,8 @@ module Data.Maclaurin
   , linearD, distrib
   , (@.), (>-<)
   -- , HasDeriv(..)
+  -- experimental
+  -- , liftD3
   ) where
 
 import Control.Applicative
@@ -51,7 +53,7 @@ type a :~> b = a -> (a:>b)
 -- with the restriction that the a :~> b is linear
 
 instance Functor ((:>) a) where
-  fmap f (D b b') = D (f b) ((fmap.fmap) f b')
+  fmap f (D b0 b') = D (f b0) ((fmap.fmap) f b')
 
 -- I think fmap will be meaningful only with *linear* functions.
 
@@ -68,6 +70,14 @@ instance Applicative ((:>) a) where
 -- constraint that @VectorSpace b@ (not @a@).  Oh well.  Be careful not to
 -- use 'pure', okay?  Alternatively, I could define the '(<*>)' (naming it
 -- something else) and then say @foo <$> p <*^> q <*^> ...@.
+
+
+-- -- experimental
+-- liftD3 :: (b -> c -> d -> e)
+--        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
+-- liftD3 f (D b0 b') (D c0 c') (D d0 d') =
+--   D (f b0 c0 d0) (liftA3 (liftD3 f) b' c' d')
+
 
 -- | Constant derivative tower.
 dConst :: VectorSpace b s => b -> a:>b
