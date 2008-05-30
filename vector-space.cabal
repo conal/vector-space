@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.1.4
+Version:             0.2.0
 Synopsis: 	     Vector & affine spaces, plus derivatives
 Category:            math
 Description:
@@ -25,14 +25,19 @@ Stability:           experimental
 build-type:	     Simple
 Hs-Source-Dirs:      src
 Extensions:          
-Build-Depends:       base
+Build-Depends:       base, OpenGL
 Exposed-Modules:     
+		     Data.AdditiveGroup
 		     Data.VectorSpace
+		     Data.LinearMap
 		     Data.Maclaurin
-		     Data.Horner
 		     Data.Derivative
 		     Data.Cross
 		     Data.AffineSpace
 		     Data.NumInstances
 		     
 ghc-options:         -Wall -O2
+
+-- 		     Data.Horner
+
+-- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.

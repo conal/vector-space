@@ -21,9 +21,8 @@ module Data.Cross
   , HasCross2(..), HasCross3(..)
   ) where
 
-import Control.Applicative
-
 import Data.VectorSpace
+import Data.LinearMap
 import Data.Derivative
 
 -- | Thing with a normal vector (not necessarily normalized).
@@ -54,16 +53,18 @@ instance Num s => HasCross2 (s,s) where
 -- "Variable occurs more often in a constraint than in the instance
 -- head".  Hence UndecidableInstances.
 
--- 2d cross-product is linear
-instance (VectorSpace v s, HasCross2 v) => HasCross2 (a:>v) where
-  cross2 = fmap cross2
+instance (LMapDom a s, VectorSpace v s, HasCross2 v) => HasCross2 (a:>v) where
+  -- 2d cross-product is linear
+  cross2 = fmapD cross2
 
-instance (Num s, VectorSpace s s) => HasNormal (One s :> Two s) where
-  normalVec v = cross2 (derivative v 1)
+instance (Num s, LMapDom s s) => HasNormal (One s :> Two s) where
+  normalVec v = cross2 (derivativeAt v 1)
 
-instance (Num s, VectorSpace s s) => HasNormal (Two (One s :> s)) where
-  normalVec = unpairF . normalVec . pairF
+-- Does this problem come from the choice of 'VectorSpace' instance?
 
+instance (Num s, LMapDom s s, VectorSpace s s)
+    => HasNormal (Two (One s :> s)) where
+  normalVec = unpairD . normalVec . pairD
 
 
 -- | Cross product of various forms of 3D vectors
@@ -76,32 +77,34 @@ instance Num s => HasCross3 (s,s,s) where
 
 -- TODO: Eliminate the 'Num' constraint by using 'VectorSpace' operations.
 
--- 3D cross-product is bilinear (curried linear)
-instance (VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
+instance (LMapDom a s, VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
+  -- 3D cross-product is bilinear (curried linear)
   cross3 = distrib cross3
 
-instance (Num s, VectorSpace s s) => HasNormal (Two s :> Three s) where
-  normalVec v = v' (1,0) `cross3` v' (0,1)
+instance (Num s, LMapDom s s) => HasNormal (Two s :> Three s) where
+  normalVec v = d (1,0) `cross3` d (0,1)
    where
-     v' = derivative v
+     d = derivativeAt v
 
-instance (Num s, VectorSpace s s) => HasNormal (Three (Two s :> s)) where
-  normalVec = untripleF . normalVec . tripleF
-
+instance (Num s, VectorSpace s s, LMapDom s s) => HasNormal (Three (Two s :> s)) where
+  normalVec = untripleD . normalVec . tripleD
 
 ---- Could go elsewhere
 
-pairF :: (Applicative f) => (f a, f b) -> f (a, b)
-pairF (u,v) = liftA2 (,) u v
+pairD :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+         (a:>b,a:>c) -> a:>(b,c)
+pairD (u,v) = liftD2 (,) u v
 
-tripleF :: (Applicative f) => (f a, f b, f c) -> f (a, b, c)
-tripleF (u,v,w) = liftA3 (,,) u v w
+tripleD :: (LMapDom a s, VectorSpace b s, VectorSpace c s, VectorSpace d s) =>
+           (a:>b,a:>c,a:>d) -> a:>(b,c,d)
+tripleD (u,v,w) = liftD3 (,,) u v w
 
-unpairF :: (Functor f) => f (a, b) -> (f a, f b)
-unpairF d = (fst <$> d, snd <$> d)
+unpairD :: (LMapDom a s, VectorSpace a s, VectorSpace b s, VectorSpace c s) =>
+           (a :> (b,c)) -> (a:>b, a:>c)
+unpairD d = (fst <$>> d, snd <$>> d)
 
-untripleF :: (Functor f) => f (a, b, c) -> (f a, f b, f c)
-untripleF d =
-  ((\ (a,_,_) -> a) <$> d, (\ (_,b,_) -> b) <$> d, (\ (_,_,c) -> c) <$> d)
-
--- Hm.  Note how unpairF an untripleF
+untripleD :: ( LMapDom a s , VectorSpace a s, VectorSpace b s
+             , VectorSpace c s, VectorSpace d s) =>
+             (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
+untripleD d =
+  ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)

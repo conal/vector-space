@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies 
-           , FlexibleInstances, FlexibleContexts, UndecidableInstances
+           , FlexibleInstances, UndecidableInstances
  #-}
 ----------------------------------------------------------------------
 -- |
@@ -15,54 +15,29 @@
 
 module Data.VectorSpace
   ( 
-    VectorSpace(..), (^-^), (^/), (^*)
-  , InnerSpace(..) --, Scalar
+    module Data.AdditiveGroup
+  , VectorSpace(..), (^/), (^*)
+  , InnerSpace(..)
   , lerp, magnitudeSq, magnitude, normalized
-  -- , (:-*)
   ) where
 
-import Control.Applicative
 import Data.Complex hiding (magnitude)
 
--- infixr 9 :-*
+import Data.AdditiveGroup
+
 infixr 7 *^, ^/, <.>
 infixl 7 ^*
-infixl 6 ^+^, ^-^
 
--- | Vector space @v@ over a scalar field @s@
-class VectorSpace v s | v -> s where
-  -- | The zero vector
-  zeroV :: v
+-- | Vector space @v@ over a scalar field @s@.  Extends 'AdditiveGroup'
+-- with scalar multiplication.
+class AdditiveGroup v => VectorSpace v s | v -> s where
   -- | Scale a vector
   (*^)  :: s -> v -> v
-  -- | Add vectors
-  (^+^) :: v -> v -> v
-  -- | Additive inverse
-  negateV :: v -> v
 
-
--- | Adds inner (dot) products
-class VectorSpace v s => InnerSpace v s | v -> s where
+-- | Adds inner (dot) products.
+class VectorSpace v s => InnerSpace v s where
   -- | Inner/dot product
   (<.>) :: v -> v -> s
-
--- | Convenience.  Maybe add methods later.
--- class VectorSpace s s => Scalar s
-
--- TODO: consider replacing v with a type constructor argument:
--- 
--- class VectorSpace v where
---   zeroV :: v s
---   (*^)  :: s -> v s -> v s
---   (^+^) :: v s -> v s -> v s
---   (<.>)   :: v s -> v s -> s
--- 
--- Perhaps with constraints on s.  We couldn't then define instances for
--- doubles & floats.
-
--- | Vector subtraction
-(^-^) :: VectorSpace v s => v -> v -> v
-v ^-^ v' = v ^+^ negateV v'
 
 -- | Vector divided by scalar
 (^/) :: (Fractional s, VectorSpace v s) => v -> s -> v
@@ -78,7 +53,7 @@ lerp a b t = (1-t)*^a ^+^ t*^b
 
 -- | Square of the length of a vector.  Sometimes useful for efficiency.
 -- See also 'magnitude'.
-magnitudeSq :: InnerSpace v s =>  v -> s
+magnitudeSq :: InnerSpace v s => v -> s
 magnitudeSq v = v <.> v
 
 -- | Length of a vector.   See also 'magnitudeSq'.
@@ -90,29 +65,14 @@ magnitude = sqrt . magnitudeSq
 normalized :: (InnerSpace v s, Floating s) =>  v -> v
 normalized v = v ^/ magnitude v
 
-instance VectorSpace Double Double where
-  zeroV   = 0.0
-  (*^)    = (*)
-  (^+^)   = (+)
-  negateV = negate
+instance VectorSpace Double Double where (*^)  = (*)
+instance InnerSpace  Double Double where (<.>) = (*)
 
-instance InnerSpace Double Double where
-  (<.>) = (*)
-
-instance VectorSpace Float Float where
-  zeroV   = 0.0
-  (*^)    = (*)
-  (^+^)   = (+)
-  negateV = negate
-
-instance InnerSpace Float Float where
-  (<.>) = (*)
+instance VectorSpace Float  Float  where (*^)  = (*)
+instance InnerSpace  Float  Float  where (<.>) = (*)
 
 instance (RealFloat v, VectorSpace v s) => VectorSpace (Complex v) s where
-  zeroV       = zeroV :+ zeroV
   s*^(u :+ v) = s*^u :+ s*^v
-  (^+^)       = (+)
-  negateV     = negate
 
 instance (RealFloat v, InnerSpace v s, VectorSpace s s')
      => InnerSpace (Complex v) s where
@@ -127,10 +87,7 @@ instance (RealFloat v, InnerSpace v s, VectorSpace s s')
 --   Coverage Condition fails for one of the functional dependencies ...)
 
 instance (VectorSpace u s,VectorSpace v s) => VectorSpace (u,v) s where
-  zeroV             = (zeroV,zeroV)
-  s *^ (u,v)        = (s*^u,s*^v)
-  (u,v) ^+^ (u',v') = (u^+^u',v^+^v')
-  negateV (u,v)     = (negateV u, negateV v)
+  s *^ (u,v) = (s*^u,s*^v)
 
 instance (InnerSpace u s,InnerSpace v s, VectorSpace s s')
     => InnerSpace (u,v) s where
@@ -141,10 +98,7 @@ instance (InnerSpace u s,InnerSpace v s, VectorSpace s s')
 
 instance (VectorSpace u s,VectorSpace v s,VectorSpace w s)
     => VectorSpace (u,v,w) s where
-  zeroV                  = (zeroV,zeroV,zeroV)
-  s *^ (u,v,w)           = (s*^u,s*^v,s*^w)
-  (u,v,w) ^+^ (u',v',w') = (u^+^u',v^+^v',w^+^w')
-  negateV (u,v,w)        = (negateV u, negateV v, negateV w)
+  s *^ (u,v,w) = (s*^u,s*^v,s*^w)
 
 instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
     => InnerSpace (u,v,w) s where
@@ -153,36 +107,6 @@ instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
 
 -- Standard instance for an applicative functor applied to a vector space.
 instance VectorSpace v s => VectorSpace (a->v) s where
-  zeroV   = pure   zeroV
-  (*^) s  = fmap   (s *^)
-  (^+^)   = liftA2 (^+^)
-  negateV = fmap   negateV
+  (*^) s = fmap (s *^)
 
--- I don't know how to make the InnerSpace class work out, because the
--- inner product would have to combine two vector *functions* into a
--- scalar value.
--- 
---   instance InnerSpace v s => InnerSpace (a->v) s where
---     (<.>) = ???
-
--- Alternatively, we could use (a->s) as the scalar field:
--- 
---   -- Standard instance for an applicative functor applied to a vector space.
---   instance VectorSpace v s => VectorSpace (a->v) (a->s) where
---     zeroV   = pure   zeroV
---     (*^)    = liftA2 (*^)
---     (^+^)   = liftA2 (^+^)
---     negateV = fmap negateV
--- 
---   instance InnerSpace v s => InnerSpace (a->v) (a->s) where
---     (<.>) = liftA2 (<.>)
--- 
--- This definition, however, doesn't fit the standard notion of linear
--- maps as vector spaces.
-
-
--- | Linear transformations/maps.  For now, represented as simple
--- functions.  The 'VectorSpace' instance for functions gives the usual
--- meaning for a vector space of linear transformations.
-
--- type a :-* b = a -> b
+-- No 'InnerSpace' instance for @(a->v)@.

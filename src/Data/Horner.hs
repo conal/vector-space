@@ -29,6 +29,7 @@ module Data.Horner
 import Control.Applicative
 
 import Data.VectorSpace
+import Data.LinearMap
 import Data.NumInstances ()
 
 infixr 9 `H`, @.
@@ -149,15 +150,17 @@ instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
-instance VectorSpace u s => VectorSpace (a :> u) (a :> s) where
-  zeroV   = dConst  zeroV    -- or dZero
-  (*^)    = distrib (*^)
-  negateV = fmap    negateV
-  (^+^)   = liftA2  (^+^)
+instance (LMapDom a s, VectorSpace u s) => AdditiveGroup (a :> u) where
+  zeroV   = pureD  zeroV    -- or dZero
+  negateV = fmapD  negateV
+  (^+^)   = liftD2 (^+^)
 
-instance (InnerSpace u s, InnerSpace s s') =>
-     InnerSpace (a :> u) (a :> s) where
-  (<.>) = distrib (<.>)
+instance (LMapDom a s, VectorSpace u s) => VectorSpace (a :> u) s where
+  (*^) s = fmapD  ((*^) s)
+
+(**^) :: (VectorSpace c s, VectorSpace s s, LMapDom a s) =>
+         (a :> s) -> (a :> c) -> (a :> c)
+(**^) = distrib (*^)
 
 -- | Chain rule.
 (@.) :: (VectorSpace b s, VectorSpace c s, Num s) =>
