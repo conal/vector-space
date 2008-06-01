@@ -36,8 +36,11 @@ Exposed-Modules:
 		     Data.AffineSpace
 		     Data.NumInstances
 		     
-ghc-options:         -Wall -O2
+ghc-options:         -Wall -O2 
 ghc-prof-options:    -prof -auto-all 
 -- 		     Data.Horner
+
+-- For ghc-options: -ddump-simpl-stats -ddump-rules
+--  
 
 -- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.

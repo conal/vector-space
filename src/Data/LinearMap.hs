@@ -2,7 +2,7 @@
            , MultiParamTypeClasses, FlexibleInstances
            , FunctionalDependencies
   #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans -fglasgow-exts #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
@@ -20,13 +20,15 @@ module Data.LinearMap
     LMapDom(..), inL, inL2
   , linearK, (.*)
   , pureL, (<*>*), fmapL, (<$>*), liftL2, liftL3, idL
+  , test1 -- export temporarily, to make sure it gets compiled
   ) where
+
+-- -fglasgow-exts above enables the RULES pragma
 
 import Control.Applicative
 import Data.Function
 
 import Data.VectorSpace
-
 
 -- Temporary
 import Graphics.Rendering.OpenGL.GL.CoordTrans
@@ -48,17 +50,18 @@ class VectorSpace a s => LMapDom a s | a -> s where
   -- | Function (assumed linear) as linear map.
   linear :: (a -> b) -> (a :-* b)
 
+
 {-# RULES
-  "linear/($*)"   forall m. linear (($*) m) == m
-  "($*)/linear"   forall f. ($*) (linear f) == f
+"linear.($*)"   forall m. linear (($*) m) = m
+"($*).linear"   forall f. ($*) (linear f) = f
  #-}
 
 -- Will the rules fire if written as follows?  Would the rewrite engine
 -- inline composition in the rules themselves to make them applicable?
 -- 
 --   {-# RULES
---     "linear/($*)"   linear . ($*) == id
---     "($*)/linear"   ($*) . linear == id
+--     "linear.($*)"   linear . ($*) == id
+--     "($*).linear"   ($*) . linear == id
 --    #-}
 
 
@@ -94,18 +97,60 @@ fmapL, (<$>*) :: (LMapDom a s, VectorSpace b s) =>
                  (b -> c) -> (a :-* b) -> (a :-* c)
 fmapL f = inL (f .)
 
+-- fmapL f
+--   = inL (f .)
+--   = linear . (f .) . ($*)
+--   = \ m -> linear (f . (($*) m))
+
 (<$>*) = fmapL
+
+{-# INLINE inL #-}
+{-# INLINE fmapL #-}
+
+-- If 'fmapL', 'inL' and '(.)' inline in 'test1', then the rule
+-- "($*).linear" ought to fire.  Test with -ddump-simpl-stats
+test1 :: (VectorSpace b s, LMapDom a s, Num b) => (a :-* b) -> a :-* b
+test1 z = fmapL (*3) . fmapL (*4) $ z
 
 -- | Apply a /linear/ binary function over linear maps.
 liftL2 :: ( LMapDom a s, VectorSpace b s
            , VectorSpace c s, VectorSpace d s) =>
            (b -> c -> d) -> (a :-* b) -> (a :-* c) -> (a :-* d)
+
+-- liftL2 f b c = fmapL f b <*>* c
+
 liftL2 f b c = linear (liftA2 f (($*) b) (($*) c))
 
---  = linear (f . ($*) b) <*>* c
---  = linear (($*) (linear (f . ($*) b)) <*> ($*) c)
---  = linear ((f . ($*) b) <*> ($*) c)
---  = linear (liftA2 f (($*) b) (($*) c))
+-- I expected the following definition to be equivalent, thanks to rewriting:
+-- 
+--   liftL2 f b c = fmapL f b <*>* c
+--     = linear (f . ($*) b) <*>* c
+--     = linear (($*) (linear (f . ($*) b)) <*> ($*) c)
+--     = linear ((f . ($*) b) <*> ($*) c)
+--     = linear (liftA2 f (($*) b) (($*) c))
+-- 
+-- Isn't happening, however.  And this simpler definition yields an
+-- incredibly slow implementation.
+-- 
+-- Here's that derivation again, in slo-mo:
+
+--   liftL2 f b c
+--     = fmapL f b <*>* c                              -- inline liftL2
+--     = inL (f .) b <*>* c                            -- inline fmapL
+--     = (linear . (f .) ($*)) b <*>* c                -- inline inL
+--     = linear (f . ($*) b) <*>* c                    -- inline (.)
+--     = inL2 (<*>) (linear (f . ($*) b)) c            -- inline (<*>*)
+--     = (inL . (<*>) . ($*)) (linear (f . ($*) b)) c  -- inline inL2
+--     = inL ((<*>) (($*) (linear (f . ($*) b)))) c    -- inline (.)
+--     = inL ((<*>) (f . ($*) b)) c                    -- RULE ($*).linear
+--     = (linear . ((<*>) (f . ($*) b)) .($*)) c       -- inline inL
+--     = linear ((<*>) (f . ($*) b) (($*) c))          -- inline (.)
+--     = linear ((f . ($*) b) <*> (($*) c))            -- infix <*>
+--     = linear ((f <$> ($*) b) <*> (($*) c))          -- <$> on (a ->)
+--     = linear (liftA2 f (($*) b) (($*) c))           -- uninline liftA2
+
+-- When I compile this module, I don't get any firings of ($*).linear
+
 
 -- | Apply a /linear/ ternary function over linear maps.
 liftL3 :: ( LMapDom a s, VectorSpace b s, VectorSpace c s
@@ -113,6 +158,9 @@ liftL3 :: ( LMapDom a s, VectorSpace b s, VectorSpace c s
            (b -> c -> d -> e)
         -> (a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e)
 liftL3 f b c d = linear (liftA3 f (($*) b) (($*) c) (($*) d))
+
+--   liftL3 f b c d = liftL2 f b c <*>* d
+
 
 -- TODO: Get clear about the linearity requirements of 'apL', 'liftL2',
 -- and 'liftL3'.
@@ -203,7 +251,6 @@ instance (LMapDom a s, LMapDom b s, LMapDom c s) => LMapDom (a,b,c) s where
 -- message if the 'LMapDom' instance (below) is compiled in a separate
 -- module.
 -- 
--- 
 --     Type indexes must match class instance head
 --     Found o but expected Vector2 u
 --     In the associated type instance for `:-*'
@@ -219,9 +266,9 @@ instance AdditiveGroup u => AdditiveGroup (Vector2 u) where
   negateV (Vector2 u v)         = Vector2 (negateV u) (negateV v)
 
 instance (VectorSpace u s) => VectorSpace (Vector2 u) s where
-  s *^ (Vector2 u v)            = Vector2 (s*^u) (s*^v)
+  s *^ Vector2 u v            = Vector2 (s*^u) (s*^v)
 
-instance (InnerSpace u s, VectorSpace s s')
+instance (InnerSpace u s, AdditiveGroup s)
     => InnerSpace (Vector2 u) s where
   Vector2 u v <.> Vector2 u' v' = u<.>u' ^+^ v<.>v'
 
@@ -241,9 +288,9 @@ instance AdditiveGroup u => AdditiveGroup (Vector3 u) where
   negateV (Vector3 u v w) = Vector3 (negateV u) (negateV v) (negateV w)
 
 instance VectorSpace u s => VectorSpace (Vector3 u) s where
-  s *^ (Vector3 u v w)    = Vector3 (s*^u) (s*^v) (s*^w)
+  s *^ Vector3 u v w    = Vector3 (s*^u) (s*^v) (s*^w)
 
-instance (InnerSpace u s, VectorSpace s s')
+instance (InnerSpace u s, AdditiveGroup s)
     => InnerSpace (Vector3 u) s where
   Vector3 u v w <.> Vector3 u' v' w' = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
