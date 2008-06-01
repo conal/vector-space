@@ -91,7 +91,7 @@ D f0 f' <*>> D x0 x' = D (f0 x0) (liftL2 (<*>>) f' x')
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: (VectorSpace b s, LMapDom a s, VectorSpace c s, VectorSpace d s) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f b c = f <$>> b <*>> c
+liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftL2 (liftD2 f) b' c')
 
 -- | Apply a /linear/ ternary function over derivative towers.
 liftD3 :: ( LMapDom a s
@@ -99,8 +99,7 @@ liftD3 :: ( LMapDom a s
           , VectorSpace d s, VectorSpace e s ) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-liftD3 f b c d = liftD2 f b c <*>> d
-
+liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftL3 (liftD3 f) b' c' d')
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.

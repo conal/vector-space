@@ -65,6 +65,10 @@ inT2 :: ((a D.:> b) -> (c D.:> d) -> (e D.:> f))
      -> ((a   :> b) -> (c   :> d) -> (e   :> f))
 inT2  = (inT .).(. unT)
 
+inT3 :: ((a D.:> b) -> (c D.:> d) -> (e D.:> f) -> (g D.:> h))
+     -> ((a   :> b) -> (c   :> d) -> (e   :> f) -> (g   :> h))
+inT3  = (inT2 .).(. unT)
+
 -- | Extract the value from a derivative tower
 powVal :: (a :> b) -> b
 powVal = D.powVal . unT
@@ -116,7 +120,7 @@ fmapD f = inT (D.fmapD f)
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: (VectorSpace b s, LMapDom a s, VectorSpace c s, VectorSpace d s) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f b c = f <$>> b <*>> c
+liftD2 f b c = inT2 (D.liftD2 f) b c
 
 -- | Apply a /linear/ ternary function over derivative towers.
 liftD3 :: ( LMapDom a s
@@ -124,7 +128,7 @@ liftD3 :: ( LMapDom a s
           , VectorSpace d s, VectorSpace e s ) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-liftD3 f b c d = liftD2 f b c <*>> d
+liftD3 f b c d = inT3 (D.liftD3 f) b c d
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
