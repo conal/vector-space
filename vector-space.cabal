@@ -37,7 +37,7 @@ Exposed-Modules:
 		     Data.NumInstances
 		     
 ghc-options:         -Wall -O2
-
+ghc-prof-options:    -prof -auto-all 
 -- 		     Data.Horner
 
 -- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.

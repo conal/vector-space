@@ -100,7 +100,7 @@ fmapL f = inL (f .)
 liftL2 :: ( LMapDom a s, VectorSpace b s
            , VectorSpace c s, VectorSpace d s) =>
            (b -> c -> d) -> (a :-* b) -> (a :-* c) -> (a :-* d)
-liftL2 f b c = fmapL f b <*>* c
+liftL2 f b c = linear (liftA2 f (($*) b) (($*) c))
 
 --  = linear (f . ($*) b) <*>* c
 --  = linear (($*) (linear (f . ($*) b)) <*> ($*) c)
@@ -112,7 +112,7 @@ liftL3 :: ( LMapDom a s, VectorSpace b s, VectorSpace c s
            , VectorSpace d s, VectorSpace e s) =>
            (b -> c -> d -> e)
         -> (a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e)
-liftL3 f b c d = liftL2 f b c <*>* d
+liftL3 f b c d = linear (liftA3 f (($*) b) (($*) c) (($*) d))
 
 -- TODO: Get clear about the linearity requirements of 'apL', 'liftL2',
 -- and 'liftL3'.
