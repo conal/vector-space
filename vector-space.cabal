@@ -1,6 +1,7 @@
 Name:                vector-space
 Version:             0.2.0
-Synopsis: 	     Vector & affine spaces, plus derivatives
+Cabal-Version:       >= 1.2
+Synopsis:            Vector & affine spaces, plus derivatives
 Category:            math
 Description:
   vector-space provides classes and generic operations for vector
@@ -18,13 +19,11 @@ Description:
 Author:              Conal Elliott 
 Maintainer:          conal@conal.net
 Homepage:            http://haskell.org/haskellwiki/vector-space
-Package-Url:	     http://code.haskell.org/vector-space
+Package-Url:         http://code.haskell.org/vector-space
 Copyright:           (c) 2007-2008 by Conal Elliott
 License:             BSD3
 Stability:           experimental
-build-type:	     Simple
-Hs-Source-Dirs:      src
-Extensions:          
+build-type:          Simple
 Build-Depends:       base, OpenGL
 Exposed-Modules:     
 		     Data.AdditiveGroup
@@ -39,8 +38,5 @@ Exposed-Modules:
 ghc-options:         -Wall -O2
 ghc-prof-options:    -prof -auto-all 
 -- 		     Data.Horner
-
--- For ghc-options: -ddump-simpl-stats -ddump-rules
---  
 
 -- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.
