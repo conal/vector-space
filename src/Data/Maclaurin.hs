@@ -55,7 +55,7 @@ type a :~> b = a -> (a:>b)
 -- to the two required 'VectorSpace' instances.
 derivativeAt :: (VectorSpace b s, LMapDom a s) =>
                 (a :> b) -> a -> (a :> b)
-derivativeAt d = ($*) (derivative d)
+derivativeAt d = lapply (derivative d)
 
 -- The crucial point here is for '($*)' to be interpreted with respect to
 -- the 'VectorSpace' instance in this module, not Mac.
@@ -132,12 +132,25 @@ distrib :: (LMapDom a s, VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
 distrib op = opD
  where
    opD u@(D u0 u') v@(D v0 v') =
-     D (u0 `op` v0) (linear (\ da -> u `opD` (v' $* da) ^+^ (u' $* da) `opD` v))
+     D (u0 `op` v0) (linear (\ da -> u `opD` (v' `lapply` da) ^+^
+                                     (u' `lapply` da) `opD` v))
 
 -- Equivalently:
 -- 
 --    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) (linear ((u `opD`) . ($*) v' ^+^ (`opD` v) . ($*) u'))
+--      D (u0 `op` v0) ( linear ((u `opD`) . lapply v') ^+^
+--                       linear ((`opD` v) . lapply u') )
+-- Or even
+-- 
+--    opD u@(D u0 u') v@(D v0 v') =
+--      D (u0 `op` v0) ( inL ((u `opD`) .) v' ^+^ inL ((`opD` v) .) u' )
+
+
+
+-- Equivalently:
+-- 
+--    opD u@(D u0 u') v@(D v0 v') =
+--      D (u0 `op` v0) (linear ((u `opD`) . lapply v' ^+^ (`opD` v) . lapply u'))
 
 
 
