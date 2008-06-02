@@ -138,19 +138,19 @@ distrib op = opD
 -- Equivalently:
 -- 
 --    opD u@(D u0 u') v@(D v0 v') =
+--      D (u0 `op` v0) (linear ((u `opD`) . lapply v' ^+^ (`opD` v) . lapply u'))
+-- 
+-- or
+-- 
+--    opD u@(D u0 u') v@(D v0 v') =
 --      D (u0 `op` v0) ( linear ((u `opD`) . lapply v') ^+^
 --                       linear ((`opD` v) . lapply u') )
--- Or even
+-- or even
 -- 
 --    opD u@(D u0 u') v@(D v0 v') =
 --      D (u0 `op` v0) ( inL ((u `opD`) .) v' ^+^ inL ((`opD` v) .) u' )
 
 
-
--- Equivalently:
--- 
---    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) (linear ((u `opD`) . lapply v' ^+^ (`opD` v) . lapply u'))
 
 
 
