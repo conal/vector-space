@@ -23,7 +23,7 @@ module Data.Maclaurin
   (
     (:>), powVal, derivative, derivativeAt
   , (:~>), dZero, pureD
-  , fmapD, (<$>>), (<*>>), liftD2, liftD3
+  , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
   , linearD, distrib
   , (@.), (>-<)
@@ -41,7 +41,7 @@ import Data.LinearMap
 
 
 infixr 9 `D`, @.
-infixl 4 <*>>, <$>>
+infixl 4 {-<*>>,-} <$>>
 infix  0 >-<
 
 
@@ -83,10 +83,10 @@ fmapD f (D b0 b') = D (f b0) ((fmapL.fmapD) f b')
 
 (<$>>) = fmapD
 
--- | Like '(<*>)' for derivative towers.
-(<*>>) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
-          (a :> (b -> c)) -> (a :> b) -> (a :> c)
-D f0 f' <*>> D x0 x' = D (f0 x0) (liftL2 (<*>>) f' x')
+-- -- | Like '(<*>)' for derivative towers.
+-- (<*>>) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+--           (a :> (b -> c)) -> (a :> b) -> (a :> c)
+-- D f0 f' <*>> D x0 x' = D (f0 x0) (liftL2 (<*>>) f' x')
 
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: (VectorSpace b s, LMapDom a s, VectorSpace c s, VectorSpace d s) =>

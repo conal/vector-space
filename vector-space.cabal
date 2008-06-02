@@ -36,7 +36,7 @@ Exposed-Modules:
 		     Data.AffineSpace
 		     Data.NumInstances
 		     
-ghc-options:         -Wall -O2 
+ghc-options:         -Wall -O2
 ghc-prof-options:    -prof -auto-all 
 -- 		     Data.Horner
 

@@ -24,7 +24,7 @@ module Data.Derivative
   (
     (:>), powVal, derivative, derivativeAt
   , (:~>), dZero, pureD
-  , fmapD, (<$>>), (<*>>), liftD2, liftD3
+  , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
   , linearD, distrib
   , (@.), (>-<)
@@ -44,7 +44,7 @@ import qualified Data.Maclaurin as D
 -- Horner vs Maclaurin) and the rest that doesn't.
 
 infixr 9 @.
-infixl 4 <*>>, <$>>
+infixl 4 {-<*>>,-} <$>>
 infix  0 >-<
 
 
@@ -108,19 +108,20 @@ pureD = fmap T D.pureD
 -- | Map a /linear/ function over a derivative tower.
 fmapD, (<$>>) :: (LMapDom a s, VectorSpace b s) =>
                  (b -> c) -> (a :> b) -> (a :> c)
-fmapD f = inT (D.fmapD f)
+fmapD = fmap inT D.fmapD
 
 (<$>>) = fmapD
 
--- | Like '(<*>)' for derivative towers.
-(<*>>) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
-          (a :> (b -> c)) -> (a :> b) -> (a :> c)
-(<*>>) = inT2 (D.<*>>)
+-- -- | Like '(<*>)' for derivative towers.
+-- (<*>>) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+--           (a :> (b -> c)) -> (a :> b) -> (a :> c)
+-- (<*>>) = inT2 (D.<*>>)
 
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: (VectorSpace b s, LMapDom a s, VectorSpace c s, VectorSpace d s) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f b c = inT2 (D.liftD2 f) b c
+liftD2 = fmap inT2 D.liftD2
+
 
 -- | Apply a /linear/ ternary function over derivative towers.
 liftD3 :: ( LMapDom a s
@@ -128,7 +129,7 @@ liftD3 :: ( LMapDom a s
           , VectorSpace d s, VectorSpace e s ) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-liftD3 f b c d = inT3 (D.liftD3 f) b c d
+liftD3 = fmap inT3 D.liftD3
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.

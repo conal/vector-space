@@ -2,7 +2,7 @@
            , MultiParamTypeClasses, FlexibleInstances
            , FunctionalDependencies
   #-}
-{-# OPTIONS_GHC -fno-warn-orphans -fglasgow-exts #-}
+{-# OPTIONS_GHC -Wall -fno-warn-orphans -fglasgow-exts #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
@@ -17,10 +17,9 @@
 
 module Data.LinearMap
   (
-    LMapDom(..), inL, inL2
+    LMapDom(..), inL, inL2, inL3
   , linearK, (.*)
-  , pureL, (<*>*), fmapL, (<$>*), liftL2, liftL3, idL
-  , test1 -- export temporarily, to make sure it gets compiled
+  , pureL {-, (<*>*)-}, fmapL, (<$>*), liftL2, liftL3, idL
   ) where
 
 -- -fglasgow-exts above enables the RULES pragma
@@ -38,7 +37,7 @@ import Graphics.Rendering.OpenGL.GL.CoordTrans
 infixr 9 :-*
 infixr 9 .*
 infixl 9 $*
-infixl 4 <*>*, <$>*
+infixl 4 {-<*>*,-} <$>*
 
 
 -- | Domain of a linear map.
@@ -50,34 +49,48 @@ class VectorSpace a s => LMapDom a s | a -> s where
   -- | Function (assumed linear) as linear map.
   linear :: (a -> b) -> (a :-* b)
 
+-- Neither 'VectorSpace' nor even 'AdditiveGroup' is really required as a
+-- 'LMapDom' superclass.  Instead, we could have additional constraints in
+-- some 'LMapDom' instances and related functions.
+
 
 {-# RULES
 "linear.($*)"   forall m. linear (($*) m) = m
 "($*).linear"   forall f. ($*) (linear f) = f
  #-}
 
--- Will the rules fire if written as follows?  Would the rewrite engine
--- inline composition in the rules themselves to make them applicable?
--- 
---   {-# RULES
---     "linear.($*)"   linear . ($*) == id
---     "($*).linear"   ($*) . linear == id
---    #-}
-
 
 -- | Transform a linear map by transforming a linear function.
 inL :: (LMapDom c s, VectorSpace b s', LMapDom a s') =>
         ((a -> b) -> (c -> d)) -> ((a :-* b) -> (c :-* d))
+{-# INLINE inL #-}
 inL h = linear . h . ($*)
 
 -- | Transform a linear maps by transforming linear functions.
 inL2 :: ( LMapDom c s, VectorSpace b s', LMapDom a s'
-         , LMapDom c s''
-         , LMapDom e s, VectorSpace d s
-         ) =>
-         ((a -> b) -> (c -> d) -> (e -> f))
-      -> ((a :-* b) -> (c :-* d) -> (e :-* f))
+        , LMapDom e s, VectorSpace d s ) =>
+        ((a -> b) -> (c -> d) -> (e -> f))
+     -> ((a :-* b) -> (c :-* d) -> (e :-* f))
+{-# INLINE inL2 #-}
 inL2 h = inL . h . ($*)
+
+-- inL2 h m n
+--   = (inL . h . ($*)) m n
+--   = inL (h (($*) m)) n
+--   = (linear . (h (($*) m)) . ($*)) n
+--   = linear (h (($*) m) (($*) n)
+--   = linear (h (m $*) (n $*))
+
+
+-- | Transform a linear maps by transforming linear functions.
+inL3 :: ( LMapDom a s, VectorSpace b s
+        , VectorSpace f s , LMapDom p s, LMapDom c s'
+        , VectorSpace d s', LMapDom e s ) =>
+        ((a -> b) -> (c -> d) -> (e -> f) -> (p -> q))
+     -> ((a :-* b) -> (c :-* d) -> (e :-* f) -> (p :-* q))
+{-# INLINE inL3 #-}
+inL3 h = inL2 . h . ($*)
+
 
 -- TODO: go through this whole module and relax constraints on scalar
 -- fields.  See if it helps with the scalar dilemma in Mac2
@@ -87,39 +100,38 @@ inL2 h = inL . h . ($*)
 pureL :: LMapDom a s => b -> (a :-* b)
 pureL b = linear (const b)
 
--- | Like '(<*>)' for linear maps.
-(<*>*) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
-        (a :-* (b -> c)) -> (a :-* b) -> (a :-* c)
-(<*>*) = inL2 (<*>)
+-- -- | Like '(<*>)' for linear maps.
+-- (<*>*) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+--         (a :-* (b -> c)) -> (a :-* b) -> (a :-* c)
+-- (<*>*) = inL2 (<*>)
 
 -- | Map a /linear/ function over a linear map.
 fmapL, (<$>*) :: (LMapDom a s, VectorSpace b s) =>
                  (b -> c) -> (a :-* b) -> (a :-* c)
-fmapL f = inL (f .)
+{-# INLINE fmapL #-}
+fmapL = inL . fmap
 
 -- fmapL f
 --   = inL (f .)
 --   = linear . (f .) . ($*)
---   = \ m -> linear (f . (($*) m))
+--   = \ m -> linear (fmap f (m $*))
 
 (<$>*) = fmapL
 
-{-# INLINE inL #-}
-{-# INLINE fmapL #-}
 
--- If 'fmapL', 'inL' and '(.)' inline in 'test1', then the rule
--- "($*).linear" ought to fire.  Test with -ddump-simpl-stats
-test1 :: (VectorSpace b s, LMapDom a s, Num b) => (a :-* b) -> a :-* b
-test1 z = fmapL (*3) . fmapL (*4) $ z
+{-# RULES
+"fmapL.fmapL"  forall f g m. fmapL f (fmapL g m) = fmapL (f.g) m
+ #-}
 
 -- | Apply a /linear/ binary function over linear maps.
 liftL2 :: ( LMapDom a s, VectorSpace b s
            , VectorSpace c s, VectorSpace d s) =>
            (b -> c -> d) -> (a :-* b) -> (a :-* c) -> (a :-* d)
+liftL2 = inL2 . liftA2
 
--- liftL2 f b c = fmapL f b <*>* c
-
-liftL2 f b c = linear (liftA2 f (($*) b) (($*) c))
+-- liftL2 f a b
+--   = inL2 (liftA2 f) a b
+--   = linear (liftA2 f (a $*) (b $*))
 
 -- I expected the following definition to be equivalent, thanks to rewriting:
 -- 
@@ -127,10 +139,11 @@ liftL2 f b c = linear (liftA2 f (($*) b) (($*) c))
 --     = linear (f . ($*) b) <*>* c
 --     = linear (($*) (linear (f . ($*) b)) <*> ($*) c)
 --     = linear ((f . ($*) b) <*> ($*) c)
---     = linear (liftA2 f (($*) b) (($*) c))
--- 
--- Isn't happening, however.  And this simpler definition yields an
--- incredibly slow implementation.
+--     = linear (liftA2 f (b $*) (c $*))
+--     = (inL2.liftA2) f b c
+
+-- The rewrite isn't happening, however.  And the '(<*>*)' definition
+-- yields an incredibly slow implementation.
 -- 
 -- Here's that derivation again, in slo-mo:
 
@@ -147,7 +160,7 @@ liftL2 f b c = linear (liftA2 f (($*) b) (($*) c))
 --     = linear ((<*>) (f . ($*) b) (($*) c))          -- inline (.)
 --     = linear ((f . ($*) b) <*> (($*) c))            -- infix <*>
 --     = linear ((f <$> ($*) b) <*> (($*) c))          -- <$> on (a ->)
---     = linear (liftA2 f (($*) b) (($*) c))           -- uninline liftA2
+--     = linear (liftA2 f (b $*) (c $*))               -- uninline liftA2
 
 -- When I compile this module, I don't get any firings of ($*).linear
 
@@ -157,9 +170,7 @@ liftL3 :: ( LMapDom a s, VectorSpace b s, VectorSpace c s
            , VectorSpace d s, VectorSpace e s) =>
            (b -> c -> d -> e)
         -> (a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e)
-liftL3 f b c d = linear (liftA3 f (($*) b) (($*) c) (($*) d))
-
---   liftL3 f b c d = liftL2 f b c <*>* d
+liftL3 = inL3 . liftA3
 
 
 -- TODO: Get clear about the linearity requirements of 'apL', 'liftL2',

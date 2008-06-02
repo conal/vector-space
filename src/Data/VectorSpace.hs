@@ -105,8 +105,8 @@ instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
 
--- Standard instance for an applicative functor applied to a vector space.
-instance VectorSpace v s => VectorSpace (a->v) s where
-  (*^) s = fmap (s *^)
+-- -- Standard instance for an applicative functor applied to a vector space.
+-- instance VectorSpace v s => VectorSpace (a->v) s where
+--   (*^) s = fmap (s *^)
 
 -- No 'InnerSpace' instance for @(a->v)@.
