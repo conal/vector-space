@@ -19,7 +19,8 @@ module Data.LinearMap
   (
     LMapDom(..), inL, inL2, inL3
   , linearK, (.*)
-  , pureL {-, (<*>*)-}, fmapL, (<$>*), liftL2, liftL3, idL
+  , pureL --, (<*>*)
+  , fmapL, (<$>*), liftL2, liftL3, idL
   ) where
 
 -- -fglasgow-exts above enables the RULES pragma
@@ -37,7 +38,7 @@ import Graphics.Rendering.OpenGL.GL.CoordTrans
 infixr 9 :-*
 infixr 9 .*
 infixl 9 `lapply`
-infixl 4 {-<*>*,-} <$>*
+infixl 4 <$>* -- , <*>*
 
 
 -- | Domain of a linear map.
@@ -192,7 +193,7 @@ instance (VectorSpace v s, LMapDom u s) => AdditiveGroup (u :-* v) where
   negateV = fmapL  negateV
 
 instance (VectorSpace v s, LMapDom u s) => VectorSpace (u :-* v) s where
-  (*^) s  = fmapL  (s *^)
+  (*^) s  = fmapL  ((*^) s)
 
 -- Or possibly the following non-standard definition:
 
@@ -289,7 +290,6 @@ instance LMapDom u s => LMapDom (Vector2 u) s where
   linear = liftA2 VecL
              (linearK (\ a -> Vector2 a zeroV))
              (linearK (\ b -> Vector2 zeroV b))
-
 
 
 instance AdditiveGroup u => AdditiveGroup (Vector3 u) where
