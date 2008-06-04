@@ -166,13 +166,11 @@ instance Ord  b => Ord  (a :> b) where compare = compare `on` unT
 
 -- These next two instances are the reason for having this module.  The
 -- scalar field differs from the one used in the underlying
--- representation.  The fundep on VectorSpace prevents us from using both
--- instances.  I could experiment with dropping the fundep, but I think
--- we'd get tons of ambiguity.  Why?  I guess because the types of some
--- 'VectorSpace' methods don't use the scalar field.  Also the '(<.>)'
--- method of 'InnerSpace'.  Idea: split 'VectorSpace' into two classes.
-
--- TODO: try it out.  If it works, eliminate this module.
+-- representation.  I can't have both instances.  First, there is a
+-- functional dependency on 'VectorSpace', which says that a vector space
+-- type determines its scalar field type.  I experimented with dropping
+-- the fundep, and then managing the resulting ambiguity.  However,
+-- the two 'VectorSpace' instances overlap considerably.
 
 instance (LMapDom a s, VectorSpace u s, VectorSpace s s)
     => VectorSpace (a :> u) (a :> s) where

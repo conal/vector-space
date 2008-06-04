@@ -35,7 +35,7 @@ mul2pi :: Floating s => s -> s
 mul2pi = (* (2*pi))
 
 torus :: (Floating s, VectorSpace s s) => s -> s -> Surf s
-torus sr cr = revolve (const (sr,0) ^+^ cr *^ circle)
+torus sr cr = revolve (\ s -> (sr,0) ^+^ cr *^ circle s)
 
 -- Try use rules to optimize?
 -- # RULES "sphere" sphere1 = spec_sphere1

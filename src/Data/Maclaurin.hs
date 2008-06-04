@@ -207,7 +207,7 @@ instance (LMapDom a s, VectorSpace u s) => VectorSpace (a :> u) s where
     D b0 b' = g a0
     D c0 c' = h b0
 
--- | Specialized chain rule.  See also '(@.)'.
+-- | Specialized chain rule.  See also '(\@.)'
 (>-<) :: (LMapDom a s, VectorSpace s s, VectorSpace u s) =>
          (u -> u) -> ((a :> u) -> (a :> s))
       -> (a :> u) -> (a :> u)

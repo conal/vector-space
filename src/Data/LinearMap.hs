@@ -219,13 +219,13 @@ instance (VectorSpace v s, LMapDom u s) => VectorSpace (u :-* v) s where
 --- Instances of LMapDom
 
 instance LMapDom Float Float where
-  data Float :-* v   = FloatL v
-  lapply (FloatL v)  = (*^ v)
+  data Float :-* o   = FloatL o
+  lapply (FloatL o)  = (*^ o)
   linear f           = FloatL (f 1)
 
 instance LMapDom Double Double where
-  data Double :-* v  = DoubleL v
-  lapply (DoubleL v) = (*^ v)
+  data Double :-* o  = DoubleL o
+  lapply (DoubleL o) = (*^ o)
   linear f           = DoubleL (f 1)
 
 
@@ -234,12 +234,20 @@ instance LMapDom Double Double where
 linearK :: (LMapDom a s) => (a -> b) -> (b -> c) -> a :-* c
 linearK k f = linear (f . k)
 
+-- instance LMapDom (Double,Double) Double where
+--   data (Double,Double) :-* o = PairD o o
+--   PairD ao bo `lapply` (a,b) = a *^ ao ^+^ b *^ bo
+--   linear f = PairD (f (0,1)) (f (1,0))
+
 instance (LMapDom a s, LMapDom b s) => LMapDom (a,b) s where
   data (a,b) :-* o = PairL (a :-* o) (b :-* o)
   PairL ao bo `lapply` (a,b) = ao `lapply` a ^+^ bo `lapply` b
-  linear = liftA2 PairL
-             (linearK (\ a -> (a,zeroV)))
-             (linearK (\ b -> (zeroV,b)))
+  linear f = PairL (linear (\ a -> f (a,zeroV)))
+                   (linear (\ b -> f (zeroV,b)))
+
+--   linear = liftA2 PairL
+--              (linearK (\ a -> (a,zeroV)))
+--              (linearK (\ b -> (zeroV,b)))
 
 instance (LMapDom a s, LMapDom b s, LMapDom c s) => LMapDom (a,b,c) s where
   data (a,b,c) :-* o = TripleL (a :-* o) (b :-* o) (c :-* o)

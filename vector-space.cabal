@@ -25,18 +25,29 @@ License:             BSD3
 Stability:           experimental
 build-type:          Simple
 Build-Depends:       base, OpenGL
-Exposed-Modules:     
-		     Data.AdditiveGroup
-		     Data.VectorSpace
-		     Data.LinearMap
-		     Data.Maclaurin
-		     Data.Derivative
-		     Data.Cross
-		     Data.AffineSpace
-		     Data.NumInstances
-		     
-ghc-options:         -Wall -O2
-ghc-prof-options:    -prof -auto-all 
--- 		     Data.Horner
 
+
+Library
+  Hs-Source-Dirs:      src
+  Extensions:          
+  Exposed-Modules:     
+                     Data.AdditiveGroup
+                     Data.VectorSpace
+                     Data.LinearMap
+                     Data.Maclaurin
+                     Data.Derivative
+                     Data.Cross
+                     Data.AffineSpace
+                     Data.NumInstances
+  ghc-options:         -Wall -O2
+  ghc-prof-options:    -prof -auto-all 
+
+Executable Perf
+  main-is:           Perf.hs
+  build-depends:     base, OpenGL, old-time
+  Hs-Source-Dirs:    src, tests/src
+  ghc-options:       -Wall -O2
+  ghc-prof-options:    -prof -auto-all   
+
+--                   Data.Horner
 -- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.
