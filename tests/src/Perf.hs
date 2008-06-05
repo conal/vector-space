@@ -142,8 +142,10 @@ main = do
 		  else loop msg fun t (count + length points) pss
 	    loop _ _ _ _ _ = return ()
 
+	let samples = samples_2d
+
 	sequence_ [ do t <- getClockTime
-		       loop msg fun t 0 (progressive_filter samples_2d)
+		       loop msg fun t 0 samples
 		  | (fun,msg) <- concat [ surfs, surfs, surfs, surfs2, surfs3 ]
 	 	  ]
 
