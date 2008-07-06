@@ -1,12 +1,9 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
            , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
-           , FlexibleContexts
            , GeneralizedNewtypeDeriving, StandaloneDeriving
   #-}
 
--- TODO: remove FlexibleContexts
-
--- {-# OPTIONS_GHC -Wall #-}
+-- {-# OPTIONS_GHC -Wall -ddump-simpl -ddump-simpl-stats #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.Derivative
@@ -22,7 +19,7 @@
 
 module Data.Derivative
   (
-    (:>), powVal, derivative, derivativeAt
+    (:>), inT, inT2, inT3, powVal, derivative, derivativeAt
   , (:~>), dZero, pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
@@ -59,14 +56,17 @@ deriving instance (VectorSpace b s, LMapDom a s              ) => AdditiveGroup 
 
 inT :: ((a D.:> b) -> (c D.:> d))
     -> ((a   :> b) -> (c   :> d))
+{-# INLINE inT #-}
 inT  = (T .).(. unT)
 
 inT2 :: ((a D.:> b) -> (c D.:> d) -> (e D.:> f))
      -> ((a   :> b) -> (c   :> d) -> (e   :> f))
+{-# INLINE inT2 #-}
 inT2  = (inT .).(. unT)
 
 inT3 :: ((a D.:> b) -> (c D.:> d) -> (e D.:> f) -> (g D.:> h))
      -> ((a   :> b) -> (c   :> d) -> (e   :> f) -> (g   :> h))
+{-# INLINE inT3 #-}
 inT3  = (inT2 .).(. unT)
 
 -- | Extract the value from a derivative tower
@@ -156,7 +156,12 @@ sndD = fmap T D.sndD
 -- bilinearity.
 distrib :: (LMapDom a s, VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
+{-# INLINE distrib #-}
 distrib = fmap inT2 D.distrib
+
+{-# SPECIALIZE distrib :: (Double -> Double -> Double) -> (Double :> Double)
+                       -> (Double :> Double) -> (Double :> Double)
+ #-}
 
 -- I'm not sure about the next three, which discard information
 
@@ -176,7 +181,7 @@ instance (LMapDom a s, VectorSpace u s, VectorSpace s s)
     => VectorSpace (a :> u) (a :> s) where
   (*^)    = inT2 (D.**^) -- not '(D.*^)'
 
-instance (InnerSpace u s, InnerSpace s s', VectorSpace s s, LMapDom a s) =>
+instance (InnerSpace u s, VectorSpace s s, LMapDom a s) =>
      InnerSpace (a :> u) (a :> s) where
   (<.>)    = inT2 (D.<*.>) -- not '(D.<.>)'
 

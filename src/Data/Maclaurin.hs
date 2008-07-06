@@ -2,6 +2,7 @@
            , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
            , FlexibleContexts
   #-}
+-- {-# OPTIONS_GHC -ddump-simpl-stats -ddump-simpl #-}
 
 -- TODO: remove FlexibleContexts
 
@@ -129,11 +130,16 @@ sndD = linearD snd
 -- bilinearity.
 distrib :: (LMapDom a s, VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
-distrib op = opD
- where
-   opD u@(D u0 u') v@(D v0 v') =
-     D (u0 `op` v0) (linear (\ da -> u `opD` (v' `lapply` da) ^+^
-                                     (u' `lapply` da) `opD` v))
+
+-- distrib op = opD
+--  where
+--    opD u@(D u0 u') v@(D v0 v') =
+--      D (u0 `op` v0) (linear (\ da -> u `opD` (v' `lapply` da) ^+^
+--                                      (u' `lapply` da) `opD` v))
+
+distrib op u@(D u0 u') v@(D v0 v') =
+     D (u0 `op` v0) (linear (\ da -> distrib op u (v' `lapply` da) ^+^
+                                     distrib op (u' `lapply` da) v))
 
 -- Equivalently:
 -- 

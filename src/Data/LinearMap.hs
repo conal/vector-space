@@ -2,7 +2,8 @@
            , MultiParamTypeClasses, FlexibleInstances
            , FunctionalDependencies
   #-}
-{-# OPTIONS_GHC -Wall -fno-warn-orphans -fglasgow-exts #-}
+{-# OPTIONS_GHC -Wall -fno-warn-orphans -fglasgow-exts -funbox-strict-fields #-}
+-- {-# OPTIONS_GHC -ddump-simpl-stats -ddump-simpl #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
@@ -17,9 +18,9 @@
 
 module Data.LinearMap
   (
-    LMapDom(..), inL, inL2, inL3
+    LMapDom(..), lapply, linear, inL, inL2, inL3
   , linearK, (.*)
-  , pureL --, (<*>*)
+  , pureL, (<*>*)
   , fmapL, (<$>*), liftL2, liftL3, idL
   ) where
 
@@ -38,7 +39,7 @@ import Graphics.Rendering.OpenGL.GL.CoordTrans
 infixr 9 :-*
 infixr 9 .*
 infixl 9 `lapply`
-infixl 4 <$>* -- , <*>*
+infixl 4 <$>*, <*>*
 
 
 -- | Domain of a linear map.
@@ -46,18 +47,30 @@ class VectorSpace a s => LMapDom a s | a -> s where
   -- | Linear map type
   data (:-*) a :: * -> *
   -- | Linear map as function
-  lapply :: VectorSpace b s => (a :-* b) -> (a -> b)
+  lapply' :: VectorSpace b s => (a :-* b) -> (a -> b)
   -- | Function (assumed linear) as linear map.
-  linear :: (a -> b) -> (a :-* b)
+  linear' :: (a -> b) -> (a :-* b)
+
+-- For fusion, I want the method inlining to get postponed.  Since I don't
+-- know how to postpone inlining of /methods/, introduce these functions
+-- instead, and postpone their inlining.  /Critically important/: compile
+-- with -fno-method-sharing, which apparently works only from the command
+-- line, not in an OPTIONS_GHC pragma.
+
+{-# INLINE [1] lapply #-}
+lapply :: (VectorSpace b s, LMapDom a s) => (a :-* b) -> a -> b
+lapply = lapply'
+{-# INLINE [1] linear #-}
+linear :: (LMapDom a s) => (a -> b) -> a :-* b
+linear = linear'
 
 -- Neither 'VectorSpace' nor even 'AdditiveGroup' is really required as a
 -- 'LMapDom' superclass.  Instead, we could have additional constraints in
 -- some 'LMapDom' instances and related functions.
 
-
 {-# RULES
-"linear.lapply"   forall m. linear (lapply m) = m
-"lapply.linear"   forall f. lapply (linear f) = f
+"linear/lapply"   forall m. linear (lapply m) = m
+"lapply/linear"   forall f. lapply (linear f) = f
  #-}
 
 
@@ -70,24 +83,23 @@ inL h = linear . h . lapply
 -- | Transform a linear maps by transforming linear functions.
 inL2 :: ( LMapDom c s, VectorSpace b s', LMapDom a s'
         , LMapDom e s, VectorSpace d s ) =>
-        ((a -> b) -> (c -> d) -> (e -> f))
+        ((a  -> b) -> (c  -> d) -> (e  -> f))
      -> ((a :-* b) -> (c :-* d) -> (e :-* f))
 {-# INLINE inL2 #-}
 inL2 h = inL . h . lapply
 
 -- inL2 h m n
---   = (inL . h . lapply) m n
---   = inL (h (lapply m)) n
---   = (linear . (h (lapply m)) . lapply) n
---   = linear (h (lapply m) (lapply n)
---   = linear (h (lapply m) (lapply n))
+--   = (inL . h . lapply) m n                -- inline inL2
+--   = inL (h (lapply m)) n                  -- inline (.)
+--   = (linear . (h (lapply m)) . lapply) n  -- inline inL
+--   = linear (h (lapply m) (lapply n))      -- inline (.)
 
 
 -- | Transform a linear maps by transforming linear functions.
 inL3 :: ( LMapDom a s, VectorSpace b s
         , VectorSpace f s , LMapDom p s, LMapDom c s'
         , VectorSpace d s', LMapDom e s ) =>
-        ((a -> b) -> (c -> d) -> (e -> f) -> (p -> q))
+        ((a  -> b) -> (c  -> d) -> (e  -> f) -> (p  -> q))
      -> ((a :-* b) -> (c :-* d) -> (e :-* f) -> (p :-* q))
 {-# INLINE inL3 #-}
 inL3 h = inL2 . h . lapply
@@ -99,15 +111,21 @@ inL3 h = inL2 . h . lapply
 
 -- | Constant value as a linear map
 pureL :: LMapDom a s => b -> (a :-* b)
+{-# INLINE pureL #-}
 pureL b = linear (const b)
 
--- -- | Like '(<*>)' for linear maps.
--- (<*>*) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
---         (a :-* (b -> c)) -> (a :-* b) -> (a :-* c)
--- (<*>*) = inL2 (<*>)
+-- Strangely, I have to add the following rewrite rule, to get some
+-- optimizations to go therough, even though 'pureL' is declared INLINE.
+{-# RULES "inline-pureL" forall b. pureL b = linear (const b) #-}
+
+-- | Like '(<*>)' for linear maps.
+(<*>*) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+        (a :-* (b -> c)) -> (a :-* b) -> (a :-* c)
+{-# INLINE (<*>*) #-}
+(<*>*) = inL2 (<*>)
 
 -- | Map a /linear/ function over a linear map.
-fmapL, (<$>*) :: (LMapDom a s, VectorSpace b s) =>
+fmapL, (<$>*) :: (LMapDom a s, VectorSpace b s{-, VectorSpace c s-}) =>
                  (b -> c) -> (a :-* b) -> (a :-* c)
 {-# INLINE fmapL #-}
 fmapL = inL . fmap
@@ -115,19 +133,28 @@ fmapL = inL . fmap
 -- fmapL f
 --   = inL (f .)
 --   = linear . (f .) . lapply
---   = \ m -> linear (fmap f (lapply m))
+--   = \ m -> linear (f . lapply m)
 
 (<$>*) = fmapL
 
+-- f <$>* m = pureL f <*>* m
 
-{-# RULES
-"fmapL.fmapL"  forall f g m. fmapL f (fmapL g m) = fmapL (f.g) m
- #-}
+-- f <$>* m
+--   = pureL f <*>* m
+--   = linear (const f) <*>* m
+--   = inL2 (<*>) (linear (const f)) m
+--   = linear (lapply (linear (const f)) <*> (lapply m))
+--   = linear (const f <*> (lapply m))
+--   = linear (\ a -> (const f a) (lapply m a))
+--   = linear (\ a -> f (lapply m a))
+
+-- Not getting this rewriting to go through.  Experiment in Opt.hs
+
 
 -- | Apply a /linear/ binary function over linear maps.
 liftL2 :: ( LMapDom a s, VectorSpace b s
-           , VectorSpace c s, VectorSpace d s) =>
-           (b -> c -> d) -> (a :-* b) -> (a :-* c) -> (a :-* d)
+          , VectorSpace c s, VectorSpace d s) =>
+         (b -> c -> d) -> (a :-* b) -> (a :-* c) -> (a :-* d)
 liftL2 = inL2 . liftA2
 
 -- liftL2 f a b
@@ -168,9 +195,9 @@ liftL2 = inL2 . liftA2
 
 -- | Apply a /linear/ ternary function over linear maps.
 liftL3 :: ( LMapDom a s, VectorSpace b s, VectorSpace c s
-           , VectorSpace d s, VectorSpace e s) =>
-           (b -> c -> d -> e)
-        -> (a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e)
+          , VectorSpace d s, VectorSpace e s) =>
+          (b -> c -> d -> e)
+       -> (a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e)
 liftL3 = inL3 . liftA3
 
 
@@ -220,18 +247,19 @@ instance (VectorSpace v s, LMapDom u s) => VectorSpace (u :-* v) s where
 
 instance LMapDom Float Float where
   data Float :-* o   = FloatL o
-  lapply (FloatL o)  = (*^ o)
-  linear f           = FloatL (f 1)
+  lapply' (FloatL o) = (*^ o)
+  linear' f          = FloatL (f 1)
 
 instance LMapDom Double Double where
-  data Double :-* o  = DoubleL o
-  lapply (DoubleL o) = (*^ o)
-  linear f           = DoubleL (f 1)
+  data Double :-* o   = DoubleL o
+  lapply' (DoubleL o) = (*^ o)
+  linear' f           = DoubleL (f 1)
 
 
--- | Convenience function for 'linear' definitions.  Both functions are
+-- | Convenience function for 'linear definitions.  Both functions are
 -- assumed linear.
 linearK :: (LMapDom a s) => (a -> b) -> (b -> c) -> a :-* c
+{-# INLINE linearK #-}
 linearK k f = linear (f . k)
 
 -- instance LMapDom (Double,Double) Double where
@@ -241,22 +269,22 @@ linearK k f = linear (f . k)
 
 instance (LMapDom a s, LMapDom b s) => LMapDom (a,b) s where
   data (a,b) :-* o = PairL (a :-* o) (b :-* o)
-  PairL ao bo `lapply` (a,b) = ao `lapply` a ^+^ bo `lapply` b
-  linear f = PairL (linear (\ a -> f (a,zeroV)))
-                   (linear (\ b -> f (zeroV,b)))
+  PairL ao bo `lapply'` (a,b) = ao `lapply` a ^+^ bo `lapply` b
+  linear' f = PairL (linear (\ a -> f (a,zeroV)))
+                    (linear (\ b -> f (zeroV,b)))
 
---   linear = liftA2 PairL
+--   linear' = liftA2 PairL
 --              (linearK (\ a -> (a,zeroV)))
 --              (linearK (\ b -> (zeroV,b)))
 
 instance (LMapDom a s, LMapDom b s, LMapDom c s) => LMapDom (a,b,c) s where
   data (a,b,c) :-* o = TripleL (a :-* o) (b :-* o) (c :-* o)
-  TripleL ao bo co `lapply` (a,b,c) =
+  TripleL ao bo co `lapply'` (a,b,c) =
     ao `lapply` a ^+^ bo `lapply` b ^+^ co `lapply` c
-  linear = liftA3 TripleL
-             (linearK (\ a -> (a,zeroV,zeroV)))
-             (linearK (\ b -> (zeroV,b,zeroV)))
-             (linearK (\ c -> (zeroV,zeroV,c)))
+  linear' = liftA3 TripleL
+              (linearK (\ a -> (a,zeroV,zeroV)))
+              (linearK (\ b -> (zeroV,b,zeroV)))
+              (linearK (\ c -> (zeroV,zeroV,c)))
 
 
 
@@ -294,8 +322,8 @@ instance (InnerSpace u s, AdditiveGroup s)
 
 instance LMapDom u s => LMapDom (Vector2 u) s where
   data Vector2 u :-* o = VecL (u :-* o) (u :-* o)
-  VecL ao bo `lapply` Vector2 a b = ao `lapply` a ^+^ bo `lapply` b
-  linear = liftA2 VecL
+  VecL ao bo `lapply'` Vector2 a b = ao `lapply` a ^+^ bo `lapply` b
+  linear' = liftA2 VecL
              (linearK (\ a -> Vector2 a zeroV))
              (linearK (\ b -> Vector2 zeroV b))
 

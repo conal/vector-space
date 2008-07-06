@@ -74,7 +74,7 @@ instance InnerSpace  Float  Float  where (<.>) = (*)
 instance (RealFloat v, VectorSpace v s) => VectorSpace (Complex v) s where
   s*^(u :+ v) = s*^u :+ s*^v
 
-instance (RealFloat v, InnerSpace v s, VectorSpace s s')
+instance (RealFloat v, InnerSpace v s, AdditiveGroup s)
      => InnerSpace (Complex v) s where
   (u :+ v) <.> (u' :+ v') = (u <.> u') ^+^ (v <.> v')
 
@@ -82,31 +82,24 @@ instance (RealFloat v, InnerSpace v s, VectorSpace s s')
 -- questionable decision to place 'RealFloat' into the definition of the
 -- 'Complex' /type/, rather than in functions and instances as needed.
 
--- With UndecidableInstances, I get
---   Illegal instance declaration for `VectorSpace (u, v) s' (the
---   Coverage Condition fails for one of the functional dependencies ...)
-
 instance (VectorSpace u s,VectorSpace v s) => VectorSpace (u,v) s where
   s *^ (u,v) = (s*^u,s*^v)
 
-instance (InnerSpace u s,InnerSpace v s, VectorSpace s s')
+instance (InnerSpace u s,InnerSpace v s, AdditiveGroup s)
     => InnerSpace (u,v) s where
   (u,v) <.> (u',v') = (u <.> u') ^+^ (v <.> v')
-
--- We could use @Num s@ and @(+)@ in place of @VectorSpace s s'@ and @(^+^)@
--- in the @InnerSpace@ instances for pairs and triples.
 
 instance (VectorSpace u s,VectorSpace v s,VectorSpace w s)
     => VectorSpace (u,v,w) s where
   s *^ (u,v,w) = (s*^u,s*^v,s*^w)
 
-instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, VectorSpace s s')
+instance (InnerSpace u s,InnerSpace v s,InnerSpace w s, AdditiveGroup s)
     => InnerSpace (u,v,w) s where
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
 
--- -- Standard instance for an applicative functor applied to a vector space.
--- instance VectorSpace v s => VectorSpace (a->v) s where
---   (*^) s = fmap (s *^)
+-- Standard instance for an applicative functor applied to a vector space.
+instance VectorSpace v s => VectorSpace (a->v) s where
+  (*^) s = fmap (s *^)
 
 -- No 'InnerSpace' instance for @(a->v)@.
