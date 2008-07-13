@@ -11,12 +11,20 @@
 -- Basis of a vector space, as an associated type
 ----------------------------------------------------------------------
 
-module Data.Basis (HasBasis(..)) where
+module Data.Basis (HasBasis(..), (:-*)) where
 
 import Data.Either
 
 import Data.AdditiveGroup
 -- import Data.VectorSpace
+import Data.MemoTrie
+
+
+
+-- The 'AdditiveGroup' superclass is a convenience.  Maybe strengthen to
+-- 'VectorSpace' later or eliminate altogether.  For now, the
+-- 'AdditiveGroup' constraint here just obviates a few such constraints in
+-- tuple instances.
 
 class AdditiveGroup v => HasBasis v where
   type Basis v :: *
@@ -47,16 +55,22 @@ instance (HasBasis u, HasBasis v, HasBasis w) => HasBasis (u,v,w) where
 --     (Use -fallow-undecidable-instances to permit this)
 --     In the type synonym instance declaration for `Basis'
 --     In the instance declaration for `HasBasis (u, v, w)'
-
+-- 
 -- Work-around:
 -- 
 --     type Basis (u,v,w) = Basis u `Either` Basis (v,w)
 
 
+-- | Linear map, represented a as a memo function from basis to values.
+type u :-* v = Basis u :->: v
 
--- Testing
+{-
+
+---- Testing
 
 t1 = basisValue () :: Float
 t2 = basisValue () :: Double
 t3 = basisValue (Right ()) :: (Float,Double)
 t4 = basisValue (Right (Left ())) :: (Float,Double,Float)
+
+-}

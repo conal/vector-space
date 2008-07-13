@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies 
-           , FlexibleInstances, UndecidableInstances
+           , TypeOperators, FlexibleInstances, UndecidableInstances
  #-}
 ----------------------------------------------------------------------
 -- |
@@ -22,8 +22,10 @@ module Data.VectorSpace
   ) where
 
 import Data.Complex hiding (magnitude)
+import Control.Applicative
 
 import Data.AdditiveGroup
+import Data.MemoTrie
 
 infixr 7 *^, ^/, <.>
 infixl 7 ^*
@@ -103,3 +105,10 @@ instance VectorSpace v s => VectorSpace (a->v) s where
   (*^) s = fmap (s *^)
 
 -- No 'InnerSpace' instance for @(a->v)@.
+
+instance (Trie u, VectorSpace v s, AdditiveGroup (u :->: v))
+         => VectorSpace (u :->: v) s where
+  (*^) s = fmap (s *^)
+
+-- The 'AdditiveGroup' constraint is implied by the others, thanks to the
+-- instance in Data.AdditiveGroup.  Why isn't ghc figuring it out?

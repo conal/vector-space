@@ -33,6 +33,8 @@ Library
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace
+                     Data.MemoTrie
+                     Data.Basis
                      Data.LinearMap
                      Data.Maclaurin
                      Data.Derivative

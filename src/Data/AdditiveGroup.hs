@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :   Data.AdditiveGroup
@@ -17,6 +18,8 @@ module Data.AdditiveGroup
 
 import Control.Applicative
 import Data.Complex hiding (magnitude)
+
+import Data.MemoTrie
 
 infixl 6 ^+^, ^-^
 
@@ -65,7 +68,13 @@ instance (AdditiveGroup u,AdditiveGroup v,AdditiveGroup w)
 
 
 -- Standard instance for an applicative functor applied to a vector space.
-instance AdditiveGroup v => AdditiveGroup (a->v) where
+instance AdditiveGroup v => AdditiveGroup (u->v) where
+  zeroV   = pure   zeroV
+  (^+^)   = liftA2 (^+^)
+  negateV = fmap   negateV
+
+-- Memo tries
+instance (Trie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
   zeroV   = pure   zeroV
   (^+^)   = liftA2 (^+^)
   negateV = fmap   negateV
