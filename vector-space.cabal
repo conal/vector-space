@@ -27,7 +27,7 @@ build-type:          Simple
 
 
 Library
-  Hs-Source-Dirs:      src
+  hs-Source-Dirs:      src
   Extensions:          
   Build-Depends:       base, OpenGL
   Exposed-Modules:     

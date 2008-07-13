@@ -13,7 +13,7 @@
 
 module Data.AdditiveGroup
   ( 
-    AdditiveGroup(..), (^-^)
+    AdditiveGroup(..), (^-^), sumV
   ) where
 
 import Control.Applicative
@@ -35,6 +35,10 @@ class AdditiveGroup v where
 -- | Group subtraction
 (^-^) :: AdditiveGroup v => v -> v -> v
 v ^-^ v' = v ^+^ negateV v'
+
+-- | Sum over several vectors
+sumV :: AdditiveGroup v => [v] -> v
+sumV = foldr (^+^) zeroV
 
 instance AdditiveGroup Double where
   zeroV   = 0.0
