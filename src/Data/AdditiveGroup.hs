@@ -78,7 +78,7 @@ instance AdditiveGroup v => AdditiveGroup (u->v) where
   negateV = fmap   negateV
 
 -- Memo tries
-instance (Trie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
+instance (HasTrie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
   zeroV   = pure   zeroV
   (^+^)   = liftA2 (^+^)
   negateV = fmap   negateV

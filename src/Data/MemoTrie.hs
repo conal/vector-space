@@ -13,8 +13,9 @@
 ----------------------------------------------------------------------
 
 module Data.MemoTrie
-  ( memo, memo2, memo3, mup, Trie(..)
-  , tabulateBits, applyBits
+  ( HasTrie(..)
+  , memo, memo2, memo3, mup
+  , trieBits, untrieBits
   ) where
 
 import Data.Bits
@@ -22,73 +23,74 @@ import Data.Word
 import Control.Applicative
 import Data.Monoid
 
+-- Mapping from all elements of 'a' to the results of some function
+class HasTrie a where
+    data (:->:) a :: * -> *
+    -- create the trie
+    trie   :: (a -> b) -> (a :->: b)
+    -- access a field of the trie
+    untrie :: (a :->: b) -> (a -> b)
+
+{-# RULES
+"trie/untrie"   forall t. trie (untrie t) = t
+"untrie/trie"   forall f. untrie (trie f) = f
+ #-}
+
 -- | Trie-based function memoizer
-memo :: Trie t => (t -> a) -> (t -> a)
-memo = apply . tabulate
+memo :: HasTrie t => (t -> a) -> (t -> a)
+memo = untrie . trie
 
 -- | Memoize a binary function, on its first argument and then on its
 -- second.  Take care to exploit any partial evaluation.
-memo2 :: (Trie s,Trie t) => (s -> t -> a) -> (s -> t -> a)
+memo2 :: (HasTrie s,HasTrie t) => (s -> t -> a) -> (s -> t -> a)
 
 -- | Memoize a ternary function on successive arguments.  Take care to
 -- exploit any partial evaluation.
-memo3 :: (Trie r,Trie s,Trie t) => (r -> s -> t -> a) -> (r -> s -> t -> a)
+memo3 :: (HasTrie r,HasTrie s,HasTrie t) => (r -> s -> t -> a) -> (r -> s -> t -> a)
 
 -- | Lift a memoizer to work with one more argument.
-mup :: Trie t => (b -> c) -> (t -> b) -> (t -> c)
+mup :: HasTrie t => (b -> c) -> (t -> b) -> (t -> c)
 mup mem f = memo (mem . f)
 
 memo2 = mup memo
 memo3 = mup memo2
 
 
--- Mapping from all elements of 'a' to the results of some function
-class Trie a where
-    data (:->:) a :: * -> *
-    -- create the table
-    tabulate :: (a -> b) -> (a :->: b)
-    -- access a field of the table
-    apply    :: (a :->: b) -> (a -> b)
+---- Instances
 
-{-# RULES
-"tabulate/apply"   forall t. tabulate (apply t) = t
-"apply/tabulate"   forall f. apply (tabulate f) = f
- #-}
+instance HasTrie Bool where
+    data Bool :->: a = BoolTrie a a
+    trie f = BoolTrie (f False) (f True)
+    untrie (BoolTrie f _) False = f
+    untrie (BoolTrie _ t) True  = t
 
+instance HasTrie () where
+    data () :->: a = UnitTrie a
+    trie f = UnitTrie (f ())
+    untrie (UnitTrie x) () = x
 
-instance Trie Bool where
-    data Bool :->: a = BoolTable a a
-    tabulate f = BoolTable (f False) (f True)
-    apply (BoolTable f _) False = f
-    apply (BoolTable _ t) True  = t
+instance (HasTrie a, HasTrie b) => HasTrie (Either a b) where
+    data (Either a b) :->: x = EitherTrie (a :->: x) (b :->: x)
+    untrie (EitherTrie f _) (Left  x) = untrie f x
+    untrie (EitherTrie _ g) (Right y) = untrie g y
+    trie f = EitherTrie (trie (f . Left)) (trie (f . Right))
 
-instance Trie () where
-    data () :->: a = UnitTable a
-    tabulate f = UnitTable (f ())
-    apply (UnitTable x) () = x
+instance (HasTrie a, HasTrie b) => HasTrie (a,b) where
+    data (a,b) :->: x = PairTrie (a :->: (b :->: x))
+    untrie (PairTrie f) (a,b) = untrie (untrie f a) b
+    trie f = PairTrie $ trie $ \a -> trie $ \b -> f (a,b)
 
-instance (Trie a, Trie b) => Trie (Either a b) where
-    data (Either a b) :->: x = EitherTable (a :->: x) (b :->: x)
-    apply (EitherTable f _) (Left x) = apply f x
-    apply (EitherTable _ g) (Right y) = apply g y
-    tabulate f = EitherTable (tabulate (f . Left)) (tabulate (f . Right))
+instance (HasTrie a, HasTrie b, HasTrie c) => HasTrie (a,b, c) where
+    data (a,b,c) :->: x = TripleTrie (a :->: (b :->: (c :->: x)))
+    untrie (TripleTrie f) (a,b,c) = untrie (untrie (untrie f a) b) c
+    trie f = TripleTrie $
+      trie $ \a -> trie $ \b -> trie $ \ c -> f (a,b,c)
 
-instance (Trie a, Trie b) => Trie (a,b) where
-    data (a,b) :->: x = PairTable (a :->: (b :->: x))
-    apply (PairTable f) (a,b) = apply (apply f a) b
-    tabulate f = PairTable $ tabulate $ \a -> tabulate $ \b -> f (a,b)
-
-instance (Trie a, Trie b, Trie c) => Trie (a,b, c) where
-    data (a,b,c) :->: x = TripleTable (a :->: (b :->: (c :->: x)))
-    apply (TripleTable f) (a,b,c) = apply (apply (apply f a) b) c
-    tabulate f = TripleTable $
-      tabulate $ \a -> tabulate $ \b -> tabulate $ \ c -> f (a,b,c)
-
-instance Trie x => Trie [x] where
-    data [x] :->: a = ListTable a (x :->: ([x] :->: a))
-    tabulate f = ListTable (f []) $ tabulate (\x -> tabulate (f . (x:)))
-    apply (ListTable n _) []     = n
-    apply (ListTable _ t) (x:xs) = apply (apply t x) xs
+instance HasTrie x => HasTrie [x] where
+    data [x] :->: a = ListTrie a (x :->: ([x] :->: a))
+    trie f = ListTrie (f []) $ trie (\x -> trie (f . (x:)))
+    untrie (ListTrie n _) []     = n
+    untrie (ListTrie _ t) (x:xs) = untrie (untrie t x) xs
 
 -- Handy for Bits types
 
@@ -107,56 +109,56 @@ unbits :: Bits t => [Bool] -> t
 unbits [] = 0
 unbits (x:xs) = unbit x .|. shiftL (unbits xs) 1
 
--- | Handy for 'tabulate' in a bits-based 'Trie' instance
-tabulateBits :: Bits t => (t -> a) -> ([Bool] :->: a)
-tabulateBits f = tabulate (f . unbits)
+-- | Handy for 'trie' in a bits-based 'Trie' instance
+trieBits :: Bits t => (t -> a) -> ([Bool] :->: a)
+trieBits f = trie (f . unbits)
 
--- | Handy for 'apply' in a bits-based 'Trie' instance
-applyBits :: Bits t => ([Bool] :->: a) -> (t -> a)
-applyBits t x = apply t (bits x)
+-- | Handy for 'untrie' in a bits-based 'Trie' instance
+untrieBits :: Bits t => ([Bool] :->: a) -> (t -> a)
+untrieBits t x = untrie t (bits x)
 
-instance Trie Word where
-    data Word :->: a = WordTable ([Bool] :->: a)
-    apply (WordTable t) = applyBits t
-    tabulate = WordTable . tabulateBits
+instance HasTrie Word where
+    data Word :->: a = WordTrie ([Bool] :->: a)
+    untrie (WordTrie t) = untrieBits t
+    trie = WordTrie . trieBits
 
 -- Although Int is a Bits instance, we can't use bits directly for
 -- memoizing, because the "bits" function gives an infinite result, since
 -- shiftR (-1) 1 == -1.  Instead, convert between Int and Word, and use
 -- a Word trie.
 
-instance Trie Int where
-    data Int :->: a = IntTable (Word :->: a)
-    apply (IntTable t) n = apply t (fromIntegral n)
-    tabulate f = IntTable (tabulate (f . fromIntegral . toInteger))
+instance HasTrie Int where
+    data Int :->: a = IntTrie (Word :->: a)
+    untrie (IntTrie t) n = untrie t (fromIntegral n)
+    trie f = IntTrie (trie (f . fromIntegral . toInteger))
 
 
 ---- Instances
 
 {-
 
-'apply' is a 'Functor'-, 'Applicative'-, and 'Monoid'-morphism, i.e.,
+'untrie' is a 'Functor'-, 'Applicative'-, and 'Monoid'-morphism, i.e.,
 
-  apply (fmap f t)      == fmap f (apply t)
+  untrie (fmap f t)      == fmap f (untrie t)
 
-  apply (pure a)        == pure a
-  apply (tf <*> tx)     == apply tf <*> apply tx
+  untrie (pure a)        == pure a
+  untrie (tf <*> tx)     == untrie tf <*> untrie tx
 
-  apply mempty          == mempty
-  apply (s `mappend` t) == apply s `mappend` apply t
+  untrie mempty          == mempty
+  untrie (s `mappend` t) == untrie s `mappend` untrie t
 
-The implementation instances then follow from applying 'tabulate' to both
+The implementation instances then follow from applying 'trie' to both
 sides of each of these morphism laws.
 
 -}
 
-instance Trie a => Functor ((:->:) a) where
-  fmap f t      = tabulate (fmap f (apply t))
+instance HasTrie a => Functor ((:->:) a) where
+  fmap f t      = trie (fmap f (untrie t))
 
-instance Trie a => Applicative ((:->:) a) where
-  pure b        = tabulate (pure b)
-  tf <*> tx     = tabulate (apply tf <*> apply tx)
+instance HasTrie a => Applicative ((:->:) a) where
+  pure b        = trie (pure b)
+  tf <*> tx     = trie (untrie tf <*> untrie tx)
 
-instance (Trie a, Monoid b) => Monoid (a :->: b) where
-  mempty        = tabulate mempty
-  s `mappend` t = tabulate (apply s `mappend` apply t)
+instance (HasTrie a, Monoid b) => Monoid (a :->: b) where
+  mempty        = trie mempty
+  s `mappend` t = trie (untrie s `mappend` untrie t)

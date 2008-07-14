@@ -106,7 +106,7 @@ instance VectorSpace v s => VectorSpace (a->v) s where
 
 -- No 'InnerSpace' instance for @(a->v)@.
 
-instance (Trie u, VectorSpace v s, AdditiveGroup (u :->: v))
+instance (HasTrie u, VectorSpace v s, AdditiveGroup (u :->: v))
          => VectorSpace (u :->: v) s where
   (*^) s = fmap (s *^)
 
