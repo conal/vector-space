@@ -22,7 +22,6 @@ module Data.VectorSpace
   ) where
 
 import Data.Complex hiding (magnitude)
-import Control.Applicative
 
 import Data.AdditiveGroup
 import Data.MemoTrie
