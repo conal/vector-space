@@ -58,7 +58,7 @@ type a :~> b = a -> (a:>b)
 --                 (a :> b) -> a -> (a :> b)
 -- derivativeAt d = lapply (derivative d)
 
--- The crucial point here is for '($*)' to be interpreted with respect to
+-- The crucial point here is for 'lapply' to be interpreted with respect to
 -- the 'VectorSpace' instance in this module, not Mac.
 
 -- The argument order for 'derivativeAt' allows partial evaluation, which
@@ -78,7 +78,7 @@ pureD :: (AdditiveGroup b, HasBasis a s, HasTrie (Basis a)) => b -> a:>b
 pureD b = b `D` pure dZero
 
 
-infixl 4 {-<*>>,-} <$>>
+infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
 fmapD, (<$>>) :: (HasTrie (Basis a), VectorSpace b s) =>
                  (b -> c) -> (a :> b) -> (a :> c)
@@ -86,6 +86,7 @@ fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
 
 (<$>>) = fmapD
 
+-- infixl 4 <*>>
 -- -- | Like '(<*>)' for derivative towers.
 -- (<*>>) :: (HasTrie (Basis a), VectorSpace b s, VectorSpace c s) =>
 --           (a :> (b -> c)) -> (a :> b) -> (a :> c)
@@ -108,7 +109,7 @@ liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c'
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-idD :: ( VectorSpace u s, VectorSpace (u :> u) s
+idD :: ( VectorSpace u s, VectorSpace (u :> u) s, VectorSpace s s
        , HasBasis u s, HasTrie (Basis u)) =>
        u :~> u
 idD = linearD id
@@ -118,9 +119,42 @@ idD = linearD id
 
 -- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
-linearD :: (VectorSpace (u :> v) s, HasBasis u s, HasTrie (Basis u), VectorSpace v s) =>
+linearD :: ( HasBasis u s, HasTrie (Basis u){-, VectorSpace (u :> v) s, -}
+           , VectorSpace v s, VectorSpace s s ) =>
            (u -> v) -> (u :~> v)
-linearD f u = f u `D` linear (pureD . f)
+
+-- linearD f u = f u `D` linear (pureD . f)
+
+-- data a :> b = D { powVal :: b, derivative :: a :-* (a :> b) }
+
+-- linear :: (VectorSpace u s, VectorSpace v s, HasBasis u s, HasTrie (Basis u)) =>
+--           (u -> v) -> (u :-* v)
+
+
+-- HEY!  I think there's a hugely wasteful recomputation going on in
+-- 'linearD' above.  Note the definition of 'linear':
+-- 
+--     linear f = trie (f . basisValue)
+-- 
+-- Substituting,
+-- 
+--     linearD f u = f u `D` trie ((pureD . f) . basisValue)
+-- 
+-- The trie gets rebuilt for each @u@.
+
+-- Look for similar problems.
+
+-- 
+
+linearD f = \ u -> f u `D` d
+ where
+   d = linear (pureD . f)
+
+-- (`D` d) . f
+
+-- linearD f = (`D` linear (pureD . f)) . f
+
+
 
 -- TODO: revise two previous signatures when i've added the VectorSpace instance for u:>v
 
@@ -176,6 +210,9 @@ distrib op u@(D u0 u') v@(D v0 v') =
 
 -- TODO: look for a simpler definition of distrib.  See inTrie2.
 
+-- TODO: This distrib is exponential in increasing degree.  Switch to the
+-- Horner representation.  See /The Music of Streams/ by Doug McIlroy.
+
 
 -- I'm not sure about the next three, which discard information
 
@@ -188,8 +225,10 @@ instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => AdditiveGroup (a 
   negateV = fmapD  negateV
   (^+^)   = liftD2 (^+^)
 
+{-
 instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => VectorSpace (a :> u) s where
   (*^) s = fmapD  ((*^) s)
+-}
 
 (**^) :: (HasBasis a s, HasTrie (Basis a), VectorSpace c s, VectorSpace s s) =>
          (a :> s) -> (a :> c) -> (a :> c)
@@ -202,20 +241,21 @@ instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => VectorSpace (a :>
 
 (<*.>) :: (HasBasis a s, HasTrie (Basis a), InnerSpace b s, VectorSpace s s) =>
           (a :> b) -> (a :> b) -> (a :> s)
-(<*.>) s = distrib (<.>) s
+(<*.>) = distrib (<.>)
 
 
 -- The instances below are the one I think we'll want externally.
 -- However, the ones above allow the definition of @a:>b@ to work out.
 -- The module "Data.Mac" rewraps to provide the alternate instances.
 
--- instance (HasTrie (Basis a), VectorSpace u s, VectorSpace s s)
---     => VectorSpace (a :> u) (a :> s) where
---   (*^) = (**^)
+instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s, VectorSpace s s)
+         => VectorSpace (a :> u) (a :> s) where
+  (*^) = (**^)
 
--- instance (InnerSpace u s, InnerSpace s s', VectorSpace s s, HasTrie (Basis a)) =>
---      InnerSpace (a :> u) (a :> s) where
---   (<.>) = (<*.>)
+instance ( InnerSpace u s, InnerSpace s s', VectorSpace s s
+         , HasBasis a s, HasTrie (Basis a)) =>
+     InnerSpace (a :> u) (a :> s) where
+  (<.>) = (<*.>)
 
 
 -- infixr 9 @.

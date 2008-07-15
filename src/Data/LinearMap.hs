@@ -32,7 +32,7 @@ import Data.Basis
 type u :-* v = Basis u :->: v
 
 -- | Function (assumed linear) as linear map.
-linear :: (VectorSpace u s, VectorSpace v s, HasBasis u s, HasTrie (Basis u)) =>
+linear :: (VectorSpace u s, VectorSpace v s', HasBasis u s, HasTrie (Basis u)) =>
           (u -> v) -> (u :-* v)
 linear f = trie (f . basisValue)
 

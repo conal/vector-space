@@ -59,33 +59,17 @@ instance ( HasBasis a s, HasTrie (Basis a)
   -- 2d cross-product is linear
   cross2 = fmapD cross2
 
-instance HasNormal (One Float :> Two Float) where
+instance (HasBasis s s, HasTrie (Basis s), Basis s ~ ()) =>
+         HasNormal (One s :> Two s) where
   normalVec v = cross2 (derivative v `untrie` ())
 
-instance HasNormal (One Double :> Two Double) where
-  normalVec v = cross2 (derivative v `untrie` ())
-
--- TODO: can these two instances be subsumed by a single instance with an
--- type equality constraint?
--- 
---   instance (HasBasis v s, HasTrie (Basis v), Basis v ~ ()) =>
---            HasNormal (One v :> Two v) where
---     normalVec v = cross2 (derivative v `untrie` ())
--- 
--- Result:
--- 
---   ghc.exe: panic! (the 'impossible' happened)
-
--- instance (Num s, HasBasis s s, HasTrie (Basis s), VectorSpace s s)
---     => HasNormal (Two (One s :> s)) where
---   normalVec = unpairD . normalVec . pairD
-
-instance HasNormal (Two (One Float :> Float)) where
+instance ( Num s, VectorSpace s s
+         , HasBasis s s, HasTrie (Basis s), Basis s ~ ())
+    => HasNormal (Two (One s :> s)) where
   normalVec = unpairD . normalVec . pairD
 
-instance HasNormal (Two (One Double :> Double)) where
-  normalVec = unpairD . normalVec . pairD
-
+-- I don't know why I can't eliminate the @HasTrie (Basis s)@ constraints
+-- above, considering @Basis s ~ ()@ and @HasTrie ()@.
 
 -- | Cross product of various forms of 3D vectors
 class HasCross3 v where cross3 :: v -> v -> v
@@ -101,18 +85,8 @@ instance (HasBasis a s, HasTrie (Basis a), VectorSpace v s, HasCross3 v) => HasC
   -- 3D cross-product is bilinear (curried linear)
   cross3 = distrib cross3
 
--- instance (Num s, HasTrie (Basis (s, s)), HasBasis s s) =>
---          HasNormal (Two s :> Three s) where
---   normalVec v = d (Left ()) `cross3` d (Right ())
---    where
---      d = untrie (derivative v)
-
-instance HasNormal (Two Float :> Three Float) where
-  normalVec v = d (Left ()) `cross3` d (Right ())
-   where
-     d = untrie (derivative v)
-
-instance HasNormal (Two Double :> Three Double) where
+instance (Num s, HasTrie (Basis (s, s)), HasBasis s s, Basis s ~ ()) =>
+         HasNormal (Two s :> Three s) where
   normalVec v = d (Left ()) `cross3` d (Right ())
    where
      d = untrie (derivative v)
@@ -122,11 +96,6 @@ instance ( Num s, VectorSpace s s, HasBasis s s, HasTrie (Basis s)
          => HasNormal (Three (Two s :> s)) where
   normalVec = untripleD . normalVec . tripleD
 
--- instance HasNormal (Three (Two Float :> Float)) where
---   normalVec = untripleD . normalVec . tripleD
-
--- instance HasNormal (Three (Two Double :> Double)) where
---   normalVec = untripleD . normalVec . tripleD
 
 ---- Could go elsewhere
 
