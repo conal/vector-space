@@ -17,6 +17,12 @@
 -- change the 'VectorSpace' instance for '(:>)'.
 ----------------------------------------------------------------------
 
+module Data.Derivative (module Data.Maclaurin) where
+
+import Data.Maclaurin
+
+{-
+
 module Data.Derivative
   (
     (:>), inT, inT2, inT3, powVal, derivative, derivativeAt
@@ -40,7 +46,6 @@ import qualified Data.Maclaurin as D
 -- Maclaurin into a module that depends on the representation (e.g.,
 -- Horner vs Maclaurin) and the rest that doesn't.
 
-infixr 9 @.
 infixl 4 {-<*>>,-} <$>>
 infix  0 >-<
 
@@ -78,11 +83,11 @@ derivative :: (VectorSpace b s, LMapDom a s) =>
               (a :> b) -> (a :-* (a :> b))
 derivative = fmapL T . D.derivative . unT
 
--- | Sampled derivative.  For avoiding an awkward typing problem related
--- to the two required 'VectorSpace' instances.
-derivativeAt :: (LMapDom a s, VectorSpace b s) =>
-                (a :> b) -> a -> (a :> b)
-derivativeAt d = T . D.derivativeAt (unT d)
+-- -- | Sampled derivative.  For avoiding an awkward typing problem related
+-- -- to the two required 'VectorSpace' instances.
+-- derivativeAt :: (LMapDom a s, VectorSpace b s) =>
+--                 (a :> b) -> a -> (a :> b)
+-- derivativeAt d = T . D.derivativeAt (unT d)
 
 -- The definition of 'derivativeAt' takes care to share partial
 -- applications of 'D.derivativeAt', which is useful in power series
@@ -143,13 +148,13 @@ linearD = (fmap.fmap) T D.linearD
 
 -- Other examples of linear functions
 
--- | Differentiable version of 'fst'
-fstD :: (VectorSpace a s, LMapDom b s, LMapDom a s) => (a,b) :~> a
-fstD = fmap T D.fstD
+-- -- | Differentiable version of 'fst'
+-- fstD :: (VectorSpace a s, LMapDom b s, LMapDom a s) => (a,b) :~> a
+-- fstD = fmap T D.fstD
 
--- | Differentiable version of 'snd'
-sndD :: (VectorSpace b s, LMapDom b s, LMapDom a s) => (a,b) :~> b
-sndD = fmap T D.sndD
+-- -- | Differentiable version of 'snd'
+-- sndD :: (VectorSpace b s, LMapDom b s, LMapDom a s) => (a,b) :~> b
+-- sndD = fmap T D.sndD
 
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
@@ -186,13 +191,16 @@ instance (InnerSpace u s, VectorSpace s s, LMapDom a s) =>
   (<.>)    = inT2 (D.<*.>) -- not '(D.<.>)'
 
 
--- | Chain rule.
-(@.) :: (LMapDom b s, LMapDom a s, VectorSpace c s) =>
-        (b :~> c) -> (a :~> b) -> (a :~> c)
-h @. g = T . ((unT . h) D.@. (unT . g))
+-- infixr 9 @.
+-- -- | Chain rule.
+-- (@.) :: (LMapDom b s, LMapDom a s, VectorSpace c s) =>
+--         (b :~> c) -> (a :~> b) -> (a :~> c)
+-- h @. g = T . ((unT . h) D.@. (unT . g))
 
 -- | Specialized chain rule.
 (>-<) :: (LMapDom a s, VectorSpace s s, VectorSpace u s) =>
          (u -> u) -> ((a :> u) -> (a :> s))
       -> (a :> u) -> (a :> u)
 f >-< f' = inT (f D.>-< (unT . f' . T))
+
+-}

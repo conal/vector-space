@@ -22,41 +22,41 @@
 
 module Data.Maclaurin
   (
-    (:>), powVal, derivative, derivativeAt
+    (:>), powVal, derivative --, derivativeAt
   , (:~>), dZero, pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
-  , idD, fstD, sndD
+  , idD -- , fstD, sndD
   , linearD, distrib
-  , (@.), (>-<)
+  -- , (@.)
+  , (>-<)
   ,(**^), (<*.>)
   -- , HasDeriv(..)
   -- experimental
   -- , liftD3
-  ) where
+  ) 
+    where
 
--- import Control.Applicative
+import Control.Applicative
 
 import Data.VectorSpace
 import Data.NumInstances ()
+import Data.MemoTrie
+import Data.Basis
 import Data.LinearMap
 
 
-infixr 9 `D`, @.
-infixl 4 {-<*>>,-} <$>>
-infix  0 >-<
-
-
+infixr 9 `D`
 -- | Tower of derivatives.
 data a :> b = D { powVal :: b, derivative :: a :-* (a :> b) }
 
 -- | Infinitely differentiable functions
 type a :~> b = a -> (a:>b)
 
--- | Sampled derivative.  For avoiding an awkward typing problem related
--- to the two required 'VectorSpace' instances.
-derivativeAt :: (VectorSpace b s, LMapDom a s) =>
-                (a :> b) -> a -> (a :> b)
-derivativeAt d = lapply (derivative d)
+-- -- | Sampled derivative.  For avoiding an awkward typing problem related
+-- -- to the two required 'VectorSpace' instances.
+-- derivativeAt :: (VectorSpace b s) =>
+--                 (a :> b) -> a -> (a :> b)
+-- derivativeAt d = lapply (derivative d)
 
 -- The crucial point here is for '($*)' to be interpreted with respect to
 -- the 'VectorSpace' instance in this module, not Mac.
@@ -70,41 +70,47 @@ noOv :: String -> a
 noOv op = error (op ++ ": not defined on a :> b")
 
 -- | Derivative tower full of 'zeroV'.
-dZero :: (LMapDom a s, AdditiveGroup b) => a:>b
+dZero :: (AdditiveGroup b, HasBasis a s, HasTrie (Basis a)) => a:>b
 dZero = pureD zeroV
 
 -- | Constant derivative tower.
-pureD :: (LMapDom a s, AdditiveGroup b) => b -> a:>b
-pureD b = b `D` pureL dZero
+pureD :: (AdditiveGroup b, HasBasis a s, HasTrie (Basis a)) => b -> a:>b
+pureD b = b `D` pure dZero
 
+
+infixl 4 {-<*>>,-} <$>>
 -- | Map a /linear/ function over a derivative tower.
-fmapD, (<$>>) :: (LMapDom a s, VectorSpace b s) =>
+fmapD, (<$>>) :: (HasTrie (Basis a), VectorSpace b s) =>
                  (b -> c) -> (a :> b) -> (a :> c)
-fmapD f (D b0 b') = D (f b0) ((fmapL.fmapD) f b')
+fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
 
 (<$>>) = fmapD
 
 -- -- | Like '(<*>)' for derivative towers.
--- (<*>>) :: (LMapDom a s, VectorSpace b s, VectorSpace c s) =>
+-- (<*>>) :: (HasTrie (Basis a), VectorSpace b s, VectorSpace c s) =>
 --           (a :> (b -> c)) -> (a :> b) -> (a :> c)
--- D f0 f' <*>> D x0 x' = D (f0 x0) (liftL2 (<*>>) f' x')
+-- D f0 f' <*>> D x0 x' = D (f0 x0) (liftA2 (<*>>) f' x')
 
 -- | Apply a /linear/ binary function over derivative towers.
-liftD2 :: (VectorSpace b s, LMapDom a s, VectorSpace c s, VectorSpace d s) =>
+liftD2 :: (HasTrie (Basis a), VectorSpace b s, VectorSpace c s, VectorSpace d s) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftL2 (liftD2 f) b' c')
+liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftA2 (liftD2 f) b' c')
 
 -- | Apply a /linear/ ternary function over derivative towers.
-liftD3 :: ( LMapDom a s
+liftD3 :: ( HasTrie (Basis a)
           , VectorSpace b s, VectorSpace c s
           , VectorSpace d s, VectorSpace e s ) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftL3 (liftD3 f) b' c' d')
+liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c' d')
+
+-- TODO: try defining liftD2, liftD3 in terms of (<*>>) above
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-idD :: (LMapDom u s, VectorSpace u s) => u :~> u
+idD :: ( VectorSpace u s, VectorSpace (u :> u) s
+       , HasBasis u s, HasTrie (Basis u)) =>
+       u :~> u
 idD = linearD id
 
 -- or
@@ -112,56 +118,63 @@ idD = linearD id
 
 -- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
-linearD :: (LMapDom u s, VectorSpace v s) => (u -> v) -> (u :~> v)
-linearD f u = D (f u) (linear (pureD . f))
+linearD :: (VectorSpace (u :> v) s, HasBasis u s, HasTrie (Basis u), VectorSpace v s) =>
+           (u -> v) -> (u :~> v)
+linearD f u = f u `D` linear (pureD . f)
+
+-- TODO: revise two previous signatures when i've added the VectorSpace instance for u:>v
+
+{-
 
 -- Other examples of linear functions
 
 -- | Differentiable version of 'fst'
-fstD :: (VectorSpace a s, LMapDom b s, LMapDom a s) => (a,b) :~> a
+fstD :: -- (VectorSpace a s, HasBasis a s, HasTrie (Basis a), HasBasis b s, HasTrie (Basis b)) =>
+        ( HasBasis a s, HasTrie (Basis a)
+        , HasBasis b s, HasTrie (Basis b)
+        , HasBasis (a,b) s, HasTrie (Basis (a, b))
+        ) =>
+        (a,b) :~> a
 fstD = linearD fst
 
--- | Differentiable version of 'snd'
-sndD :: (VectorSpace b s, LMapDom b s, LMapDom a s) => (a,b) :~> b
-sndD = linearD snd
+-- wtf:
+-- 
+--   Data/NewMaclaurin.hs:138:7:
+--       Could not deduce (HasTrie (Basis (a, b)))
+--         from the context (HasBasis a s,
+--                           HasTrie (Basis a),
+--                           HasBasis b s,
+--                           HasTrie (Basis b),
+--                           HasBasis (a, b) s,
+--                           HasTrie (Basis (a, b)))
+--         arising from a use of `linearD' at Data/NewMaclaurin.hs:138:7-17
+--       Possible fix:
+--         add (HasTrie (Basis (a, b))) to the context of
+--           the type signature for `fstD'
+--         or add an instance declaration for (HasTrie (Basis (a, b)))
+--       In the expression: linearD fst
+--       In the definition of `fstD': fstD = linearD fst
+--   Failed, modules loaded: Data.MemoTrie, Data.Basis, Data.VectorSpace, Data.AdditiveGroup, Data.NumInstances.
+--   *Data.Basis> 
+
+-- -- | Differentiable version of 'snd'
+-- sndD :: (VectorSpace b s, HasBasis b s, HasTrie (Basis b), HasTrie (Basis a)) => (a,b) :~> b
+-- sndD = linearD snd
+
+-}
 
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distrib :: (LMapDom a s, VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
+distrib :: ( HasBasis a s, HasTrie (Basis a)
+           , VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
--- distrib op = opD
---  where
---    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) (linear (\ da -> u `opD` (v' `lapply` da) ^+^
---                                      (u' `lapply` da) `opD` v))
-
 distrib op u@(D u0 u') v@(D v0 v') =
-     D (u0 `op` v0) (linear (\ da -> distrib op u (v' `lapply` da) ^+^
-                                     distrib op (u' `lapply` da) v))
+  D (u0 `op` v0) (trie (\ da -> distrib op u (v' `untrie` da) ^+^
+                                distrib op (u' `untrie` da) v))
 
--- Equivalently:
--- 
---    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) (linear ((u `opD`) . lapply v' ^+^ (`opD` v) . lapply u'))
--- 
--- or
--- 
---    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) ( linear ((u `opD`) . lapply v') ^+^
---                       linear ((`opD` v) . lapply u') )
--- or even
--- 
---    opD u@(D u0 u') v@(D v0 v') =
---      D (u0 `op` v0) ( inL ((u `opD`) .) v' ^+^ inL ((`opD` v) .) u' )
-
-
-
-
-
--- TODO: look for a simpler definition of distrib.  this definition almost
--- fits liftLM2.
+-- TODO: look for a simpler definition of distrib.  See inTrie2.
 
 
 -- I'm not sure about the next three, which discard information
@@ -170,24 +183,24 @@ instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
-instance (LMapDom a s, VectorSpace u s) => AdditiveGroup (a :> u) where
+instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => AdditiveGroup (a :> u) where
   zeroV   = pureD  zeroV    -- or dZero
   negateV = fmapD  negateV
   (^+^)   = liftD2 (^+^)
 
-instance (LMapDom a s, VectorSpace u s) => VectorSpace (a :> u) s where
+instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => VectorSpace (a :> u) s where
   (*^) s = fmapD  ((*^) s)
 
-(**^) :: (VectorSpace c s, VectorSpace s s, LMapDom a s) =>
+(**^) :: (HasBasis a s, HasTrie (Basis a), VectorSpace c s, VectorSpace s s) =>
          (a :> s) -> (a :> c) -> (a :> c)
 (**^) = distrib (*^)
 
 -- ouch!  InnerSpace one won't work at all, for the same reason as for functions.
-                  
+
 -- instance (InnerSpace u s) => InnerSpace (a :> u) s where
 --   (<.>) = distrib (<.>)
 
-(<*.>) :: (LMapDom a s, InnerSpace b s, VectorSpace s s) =>
+(<*.>) :: (HasBasis a s, HasTrie (Basis a), InnerSpace b s, VectorSpace s s) =>
           (a :> b) -> (a :> b) -> (a :> s)
 (<*.>) s = distrib (<.>) s
 
@@ -196,32 +209,35 @@ instance (LMapDom a s, VectorSpace u s) => VectorSpace (a :> u) s where
 -- However, the ones above allow the definition of @a:>b@ to work out.
 -- The module "Data.Mac" rewraps to provide the alternate instances.
 
--- instance (LMapDom a s, VectorSpace u s, VectorSpace s s)
+-- instance (HasTrie (Basis a), VectorSpace u s, VectorSpace s s)
 --     => VectorSpace (a :> u) (a :> s) where
 --   (*^) = (**^)
 
--- instance (InnerSpace u s, InnerSpace s s', VectorSpace s s, LMapDom a s) =>
+-- instance (InnerSpace u s, InnerSpace s s', VectorSpace s s, HasTrie (Basis a)) =>
 --      InnerSpace (a :> u) (a :> s) where
 --   (<.>) = (<*.>)
 
 
--- | Chain rule.  See also '(>-<)'.
-(@.) :: (LMapDom b s, LMapDom a s, VectorSpace c s) =>
-        (b :~> c) -> (a :~> b) -> (a :~> c)
-(h @. g) a0 = D c0 (inL2 (@.) c' b')
-  where
-    D b0 b' = g a0
-    D c0 c' = h b0
+-- infixr 9 @.
+-- -- | Chain rule.  See also '(>-<)'.
+-- (@.) :: (HasTrie (Basis b), HasTrie (Basis a), VectorSpace c s) =>
+--         (b :~> c) -> (a :~> b) -> (a :~> c)
+-- (h @. g) a0 = D c0 (inL2 (@.) c' b')
+--   where
+--     D b0 b' = g a0
+--     D c0 c' = h b0
+
+infix  0 >-<
 
 -- | Specialized chain rule.  See also '(\@.)'
-(>-<) :: (LMapDom a s, VectorSpace s s, VectorSpace u s) =>
+(>-<) :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s, VectorSpace u s) =>
          (u -> u) -> ((a :> u) -> (a :> s))
       -> (a :> u) -> (a :> u)
-f >-< f' = \ u@(D u0 u') -> D (f u0) ((f' u **^) <$>* u')
+f >-< f' = \ u@(D u0 u') -> D (f u0) ((f' u **^) <$> u')
 
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
 
-instance (LMapDom a b, Num b, VectorSpace b b) => Num (a:>b) where
+instance (HasBasis a s, HasTrie (Basis a), Num s, VectorSpace s s) => Num (a:>s) where
   fromInteger = pureD . fromInteger
   (+) = liftD2  (+)
   (-) = liftD2  (-)
@@ -230,14 +246,16 @@ instance (LMapDom a b, Num b, VectorSpace b b) => Num (a:>b) where
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
 
-instance (LMapDom a b, Fractional b, VectorSpace b b) => Fractional (a:>b) where
+instance (HasBasis a s, HasTrie (Basis a), Fractional s, VectorSpace s s)
+         => Fractional (a:>s) where
   fromRational = pureD . fromRational
   recip        = recip >-< recip sqr
 
 sqr :: Num a => a -> a
 sqr x = x*x
 
-instance (LMapDom a b, Floating b, VectorSpace b b) => Floating (a:>b) where
+instance (HasBasis a s, HasTrie (Basis a), Floating s, VectorSpace s s)
+         => Floating (a:>s) where
   pi    = pureD pi
   exp   = exp   >-< exp
   log   = log   >-< recip

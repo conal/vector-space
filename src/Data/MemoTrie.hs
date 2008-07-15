@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs, TypeFamilies, TypeOperators #-}
+{-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.MemoTrie
@@ -15,6 +16,7 @@
 module Data.MemoTrie
   ( HasTrie(..)
   , memo, memo2, memo3, mup
+  , inTrie, inTrie2
   , trieBits, untrieBits
   ) where
 
@@ -55,6 +57,18 @@ mup mem f = memo (mem . f)
 memo2 = mup memo
 memo3 = mup memo2
 
+
+-- | Manipulate a trie by manipulating a unary function
+inTrie :: (HasTrie a, HasTrie a') =>
+          ((a  ->  b) -> (a'  ->  b'))
+       -> ((a :->: b) -> (a' :->: b'))
+inTrie h = trie . h . untrie
+
+-- | Manipulate a trie by manipulating a unary function
+inTrie2 :: (HasTrie a, HasTrie a', HasTrie a'') =>
+           ((a  ->  b) -> (a'  ->  b') -> (a''  ->  b''))
+        -> ((a :->: b) -> (a' :->: b') -> (a'' :->: b''))
+inTrie2 h = inTrie . h . untrie
 
 ---- Instances
 

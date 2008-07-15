@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, UndecidableInstances
-  , FlexibleContexts, FlexibleInstances, MultiParamTypeClasses
+  , FlexibleInstances, MultiParamTypeClasses
   #-}
-{-# OPTIONS_GHC -Wall #-}
+{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.Basis
@@ -16,14 +16,17 @@
 
 module Data.Basis
   (
-    HasBasis(..), (:-*), lapply
+    HasBasis(..)
   ) where
 
 import Control.Arrow (second)
 import Data.Either
 
 import Data.VectorSpace
-import Data.MemoTrie
+
+-- Temporary, due to a buggy handling to type 
+import Graphics.Rendering.OpenGL.GL.CoordTrans
+  (Vector2(..),Vector3(..))
 
 
 class VectorSpace v s => HasBasis v s where
@@ -33,16 +36,6 @@ class VectorSpace v s => HasBasis v s where
 
 -- TODO: switch from fundep to associated type.  eliminate the second type
 -- parameter in VectorSpace and HasBasis
-
-
--- | Linear map, represented a as a memo function from basis to values.
-type u :-* v = Basis u :->: v
-
--- | Apply a linear map to a vector.
-lapply :: (VectorSpace u s, VectorSpace v s, HasBasis u s, HasTrie (Basis u)) =>
-          (u :-* v) -> (u -> v)
-lapply lm u = sumV [s *^ (lm `untrie` b) | (s,b) <- decompose u]
-
 
 instance HasBasis Float Float where
   type Basis Float = ()
@@ -98,4 +91,43 @@ t4 = basisValue (Right (Left ())) :: (Float,Double,Float)
 
 -}
 
+
+
+-- TODO: is UndecidableInstances still necessary?
+
+instance AdditiveGroup u => AdditiveGroup (Vector2 u) where
+  zeroV                         = Vector2 zeroV zeroV
+  Vector2 u v ^+^ Vector2 u' v' = Vector2 (u^+^u') (v^+^v')
+  negateV (Vector2 u v)         = Vector2 (negateV u) (negateV v)
+
+instance (VectorSpace u s) => VectorSpace (Vector2 u) s where
+  s *^ Vector2 u v            = Vector2 (s*^u) (s*^v)
+
+instance (InnerSpace u s, AdditiveGroup s)
+    => InnerSpace (Vector2 u) s where
+  Vector2 u v <.> Vector2 u' v' = u<.>u' ^+^ v<.>v'
+
+instance HasBasis u s => HasBasis (Vector2 u) s where
+  type Basis (Vector2 u) = Basis (u,u)
+  basisValue             = toV2 . basisValue
+  decompose              = decompose . fromV2
+
+toV2 :: (u,u) -> Vector2 u
+toV2 (u,v) = Vector2 u v
+
+fromV2 :: Vector2 u -> (u,u)
+fromV2 (Vector2 u v) = (u,v)
+
+instance AdditiveGroup u => AdditiveGroup (Vector3 u) where
+  zeroV                   = Vector3 zeroV zeroV zeroV
+  Vector3 u v w ^+^ Vector3 u' v' w'
+                          = Vector3 (u^+^u') (v^+^v') (w^+^w')
+  negateV (Vector3 u v w) = Vector3 (negateV u) (negateV v) (negateV w)
+
+instance VectorSpace u s => VectorSpace (Vector3 u) s where
+  s *^ Vector3 u v w    = Vector3 (s*^u) (s*^v) (s*^w)
+
+instance (InnerSpace u s, AdditiveGroup s)
+    => InnerSpace (Vector3 u) s where
+  Vector3 u v w <.> Vector3 u' v' w' = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
