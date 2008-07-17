@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
+           , TypeFamilies, FlexibleContexts
   #-}
 
 
@@ -15,6 +16,8 @@ import Data.NumInstances ()
 import Data.VectorSpace
 import Data.Cross
 import Data.Derivative
+import Data.Basis
+import Data.MemoTrie
 import Data.LinearMap
 
 type Surf s        = (s,s) -> (s,s,s)
@@ -162,13 +165,14 @@ vsurf surf = toVN3 . vector3D . surf . unvector2D . idD
 
 type SurfPt s = (s,s) :> (s,s,s)
 
-toVN3 :: (LMapDom s s,Floating s, InnerSpace s s) => SurfPt s -> ((s,s,s),(s,s,s))
+toVN3 :: (HasBasis s s, Basis s ~ (), Floating s, InnerSpace s s)
+         => SurfPt s -> ((s,s,s),(s,s,s))
 toVN3 v = ( powVal v
 	  , powVal (normal v)
 	  )
-vector3D :: (LMapDom a s,VectorSpace s s) => (a :> s,a :> s,a :> s) -> (a :> (s,s,s))
+vector3D :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s) => (a :> s,a :> s,a :> s) -> (a :> (s,s,s))
 vector3D (u,v,w) = liftD3 (,,) u v w
-unvector2D :: (Data.LinearMap.LMapDom a s,VectorSpace s s) => (a :> (s,s)) -> (a :> s,a :> s) 
+unvector2D :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s) => (a :> (s,s)) -> (a :> s,a :> s) 
 unvector2D d = ( (\ (x,_) -> x) <$>> d
 	       , (\ (_,y) -> y) <$>> d
 	       )
