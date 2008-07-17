@@ -109,7 +109,7 @@ liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c'
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-idD :: ( VectorSpace u s, VectorSpace (u :> u) s, VectorSpace s s
+idD :: ( VectorSpace u s, VectorSpace (u :> u) (u :> s), VectorSpace s s
        , HasBasis u s, HasTrie (Basis u)) =>
        u :~> u
 idD = linearD id
