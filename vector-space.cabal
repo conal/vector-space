@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.2.1
+Version:             0.2.2
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
@@ -29,7 +29,7 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base, OpenGL
+  Build-Depends:       base
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace

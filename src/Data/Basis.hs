@@ -24,18 +24,14 @@ import Data.Either
 
 import Data.VectorSpace
 
--- Temporary, due to a buggy handling to type 
-import Graphics.Rendering.OpenGL.GL.CoordTrans
-  (Vector2(..),Vector3(..))
-
-
 class VectorSpace v s => HasBasis v s where
   type Basis v :: *
   basisValue :: Basis v -> v
   decompose :: v -> [(s, Basis v)]
 
 -- TODO: switch from fundep to associated type.  eliminate the second type
--- parameter in VectorSpace and HasBasis
+-- parameter in VectorSpace and HasBasis.
+-- Blocking bug: http://hackage.haskell.org/trac/ghc/ticket/2448
 
 instance HasBasis Float Float where
   type Basis Float = ()
@@ -75,7 +71,7 @@ nest3 (a,b,c) = (a,(b,c))
 --     In the type synonym instance declaration for `Basis'
 --     In the instance declaration for `HasBasis (u, v, w)'
 -- 
--- Work-around:
+-- A work-around:
 -- 
 --     type Basis (u,v,w) = Basis u `Either` Basis (v,w)
 
@@ -90,44 +86,4 @@ t3 = basisValue (Right ()) :: (Float,Double)
 t4 = basisValue (Right (Left ())) :: (Float,Double,Float)
 
 -}
-
-
-
--- TODO: is UndecidableInstances still necessary?
-
-instance AdditiveGroup u => AdditiveGroup (Vector2 u) where
-  zeroV                         = Vector2 zeroV zeroV
-  Vector2 u v ^+^ Vector2 u' v' = Vector2 (u^+^u') (v^+^v')
-  negateV (Vector2 u v)         = Vector2 (negateV u) (negateV v)
-
-instance (VectorSpace u s) => VectorSpace (Vector2 u) s where
-  s *^ Vector2 u v            = Vector2 (s*^u) (s*^v)
-
-instance (InnerSpace u s, AdditiveGroup s)
-    => InnerSpace (Vector2 u) s where
-  Vector2 u v <.> Vector2 u' v' = u<.>u' ^+^ v<.>v'
-
-instance HasBasis u s => HasBasis (Vector2 u) s where
-  type Basis (Vector2 u) = Basis (u,u)
-  basisValue             = toV2 . basisValue
-  decompose              = decompose . fromV2
-
-toV2 :: (u,u) -> Vector2 u
-toV2 (u,v) = Vector2 u v
-
-fromV2 :: Vector2 u -> (u,u)
-fromV2 (Vector2 u v) = (u,v)
-
-instance AdditiveGroup u => AdditiveGroup (Vector3 u) where
-  zeroV                   = Vector3 zeroV zeroV zeroV
-  Vector3 u v w ^+^ Vector3 u' v' w'
-                          = Vector3 (u^+^u') (v^+^v') (w^+^w')
-  negateV (Vector3 u v w) = Vector3 (negateV u) (negateV v) (negateV w)
-
-instance VectorSpace u s => VectorSpace (Vector3 u) s where
-  s *^ Vector3 u v w    = Vector3 (s*^u) (s*^v) (s*^w)
-
-instance (InnerSpace u s, AdditiveGroup s)
-    => InnerSpace (Vector3 u) s where
-  Vector3 u v w <.> Vector3 u' v' w' = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 

@@ -16,6 +16,8 @@
 -- NB: I'm attempting to replace fundeps with associated types.  See
 -- NewVectorSpace.hs.  Ran into trouble with type equality constraints not
 -- getting propagated.  Manuel Ch is looking into it.
+-- 
+-- Blocking bug: http://hackage.haskell.org/trac/ghc/ticket/2448
 
 module Data.VectorSpace
   ( 
