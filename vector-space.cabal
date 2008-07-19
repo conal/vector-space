@@ -1,14 +1,17 @@
 Name:                vector-space
-Version:             0.2.2
+Version:             0.3
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
 Description:
-  vector-space provides classes and generic operations for vector
+  '''vector-space''' provides classes and generic operations for vector
   spaces and affine spaces.  It also defines a type of infinite towers
   of generalized derivatives.  A generalized derivative is a linear
   transformation rather than one of the common concrete representations
   (scalars, vectors, matrices, ...).
+  .
+  '''Warning''': this package depends on type families working fairly well,
+  and requires ghc version at least 6.9.
   .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
   .
@@ -29,11 +32,10 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base
+  Build-Depends:       base, MemoTrie
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace
-                     Data.MemoTrie
                      Data.Basis
                      Data.LinearMap
                      Data.Maclaurin
@@ -41,8 +43,10 @@ Library
                      Data.Cross
                      Data.AffineSpace
                      Data.NumInstances
-  ghc-options:         -Wall -O2 -fno-method-sharing
+  ghc-options:         -Wall -O2
   ghc-prof-options:    -prof -auto-all 
+
+--  -fno-method-sharing
 
 -- Executable Perf
 --   main-is:           Perf.hs
@@ -53,5 +57,3 @@ Library
 
 --                   Data.Horner
 -- For ghc-options: -ddump-simpl-stats -ddump-rules -ddump-simpl -ddump-simpl-phases
---  
--- The OpenGL dependency is a temporary workaround for a ghc-6.8.2 type family bug.
