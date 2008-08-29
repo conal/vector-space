@@ -1,3 +1,7 @@
+-- WARNING: this module depends on type families working fairly well, and
+-- requires ghc version at least 6.9.  I didn't find a way to specify that
+-- dependency in the .cabal.
+-- 
 {-# LANGUAGE TypeOperators, TypeFamilies, UndecidableInstances
   , FlexibleInstances, MultiParamTypeClasses
   #-}
