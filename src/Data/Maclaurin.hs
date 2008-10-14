@@ -1,7 +1,15 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
            , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
            , FlexibleContexts
+           , ScopedTypeVariables
   #-}
+
+-- The ScopedTypeVariables is there just as a bug work-around.  Without it
+-- I get a bogus error about context mismatch for mutually recursive
+-- definitions.  This bug was introduced between ghc 6.9.20080622 and
+-- 6.10.0.20081007.
+
+
 -- {-# OPTIONS_GHC -ddump-simpl-stats -ddump-simpl #-}
 
 -- TODO: remove FlexibleContexts
