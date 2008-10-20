@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.3.1
+Version:             0.4
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9)
 Category:            math
@@ -27,10 +27,6 @@ Copyright:           (c) 2008 by Conal Elliott
 License:             BSD3
 Stability:           experimental
 build-type:          Simple
-
--- WARNING: Data.Basis depends on type families working fairly well,
--- and requires ghc version at least 6.9.  I don't know how to specify
--- that dependency in the .cabal.
 
 Library
   hs-Source-Dirs:      src
