@@ -10,7 +10,8 @@
 -- Maintainer  :  conal@conal.net, andygill@ku.edu
 -- Stability   :  experimental
 -- 
--- Vector spaces
+-- Vector spaces.  Fundep version.  GHC-6.9 isn't quite up to the nicer
+-- version in @Data.VectorSpace@, which uses associated types.
 ----------------------------------------------------------------------
 
 -- NB: I'm attempting to replace fundeps with associated types.  See
@@ -111,9 +112,6 @@ instance VectorSpace v s => VectorSpace (a->v) s where
 
 -- No 'InnerSpace' instance for @(a->v)@.
 
-instance (HasTrie u, VectorSpace v s, AdditiveGroup (u :->: v))
-         => VectorSpace (u :->: v) s where
+instance (HasTrie a, VectorSpace v s)
+         => VectorSpace (a :->: v) s where
   (*^) s = fmap (s *^)
-
--- The 'AdditiveGroup' constraint is implied by the others, thanks to the
--- instance in Data.AdditiveGroup.  Why isn't ghc figuring it out?

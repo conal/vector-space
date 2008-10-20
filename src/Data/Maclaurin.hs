@@ -33,14 +33,10 @@ module Data.Maclaurin
     (:>), powVal, derivative --, derivativeAt
   , (:~>), dZero, pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
-  , idD -- , fstD, sndD
+  , idD, fstD, sndD
   , linearD, distrib
   -- , (@.)
   , (>-<)
-  ,(**^), (<*.>)
-  -- , HasDeriv(..)
-  -- experimental
-  -- , liftD3
   ) 
     where
 
@@ -127,7 +123,7 @@ idD = linearD id
 
 -- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
-linearD :: ( HasBasis u s, HasTrie (Basis u){-, VectorSpace (u :> v) s, -}
+linearD :: ( HasBasis u s, HasTrie (Basis u)
            , VectorSpace v s, VectorSpace s s ) =>
            (u -> v) -> (u :~> v)
 
@@ -166,63 +162,40 @@ linearD f = \ u -> f u `D` d
 
 -- TODO: revise two previous signatures when i've added the VectorSpace instance for u:>v
 
-{-
-
 -- Other examples of linear functions
 
 -- | Differentiable version of 'fst'
-fstD :: -- (VectorSpace a s, HasBasis a s, HasTrie (Basis a), HasBasis b s, HasTrie (Basis b)) =>
-        ( HasBasis a s, HasTrie (Basis a)
+fstD :: ( HasBasis a s, HasTrie (Basis a)
         , HasBasis b s, HasTrie (Basis b)
-        , HasBasis (a,b) s, HasTrie (Basis (a, b))
-        ) =>
-        (a,b) :~> a
+        , VectorSpace s s
+        ) => (a,b) :~> a
 fstD = linearD fst
 
--- wtf:
--- 
---   Data/NewMaclaurin.hs:138:7:
---       Could not deduce (HasTrie (Basis (a, b)))
---         from the context (HasBasis a s,
---                           HasTrie (Basis a),
---                           HasBasis b s,
---                           HasTrie (Basis b),
---                           HasBasis (a, b) s,
---                           HasTrie (Basis (a, b)))
---         arising from a use of `linearD' at Data/NewMaclaurin.hs:138:7-17
---       Possible fix:
---         add (HasTrie (Basis (a, b))) to the context of
---           the type signature for `fstD'
---         or add an instance declaration for (HasTrie (Basis (a, b)))
---       In the expression: linearD fst
---       In the definition of `fstD': fstD = linearD fst
---   Failed, modules loaded: Data.MemoTrie, Data.Basis, Data.VectorSpace, Data.AdditiveGroup, Data.NumInstances.
---   *Data.Basis> 
-
--- -- | Differentiable version of 'snd'
--- sndD :: (VectorSpace b s, HasBasis b s, HasTrie (Basis b), HasTrie (Basis a)) => (a,b) :~> b
--- sndD = linearD snd
-
--}
+-- | Differentiable version of 'snd'
+sndD :: ( HasBasis a s, HasTrie (Basis a)
+        , HasBasis b s, HasTrie (Basis b)
+        , VectorSpace s s
+        ) => (a,b) :~> b
+sndD = linearD snd
 
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
 distrib :: ( HasBasis a s, HasTrie (Basis a)
-           , VectorSpace b s, VectorSpace c s, VectorSpace u s) =>
-           (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
+           , VectorSpace b s, VectorSpace c s, VectorSpace u s
+           ) => (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 distrib op u@(D u0 u') v@(D v0 v') =
   D (u0 `op` v0) (trie (\ da -> distrib op u (v' `untrie` da) ^+^
                                 distrib op (u' `untrie` da) v))
 
--- TODO: look for a simpler definition of distrib.  See inTrie2.
+
+-- TODO: look for a simpler definition of distrib.  See the applicative
+-- instance for @(:->:) a@, or define @inTrie2@.
 
 -- TODO: This distrib is exponential in increasing degree.  Switch to the
 -- Horner representation.  See /The Music of Streams/ by Doug McIlroy.
 
-
--- I'm not sure about the next three, which discard information
 
 instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
@@ -233,37 +206,14 @@ instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => AdditiveGroup (a 
   negateV = fmapD  negateV
   (^+^)   = liftD2 (^+^)
 
-{-
-instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => VectorSpace (a :> u) s where
-  (*^) s = fmapD  ((*^) s)
--}
-
-(**^) :: (HasBasis a s, HasTrie (Basis a), VectorSpace c s, VectorSpace s s) =>
-         (a :> s) -> (a :> c) -> (a :> c)
-(**^) = distrib (*^)
-
--- ouch!  InnerSpace one won't work at all, for the same reason as for functions.
-
--- instance (InnerSpace u s) => InnerSpace (a :> u) s where
---   (<.>) = distrib (<.>)
-
-(<*.>) :: (HasBasis a s, HasTrie (Basis a), InnerSpace b s, VectorSpace s s) =>
-          (a :> b) -> (a :> b) -> (a :> s)
-(<*.>) = distrib (<.>)
-
-
--- The instances below are the one I think we'll want externally.
--- However, the ones above allow the definition of @a:>b@ to work out.
--- The module "Data.Mac" rewraps to provide the alternate instances.
-
 instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s, VectorSpace s s)
          => VectorSpace (a :> u) (a :> s) where
-  (*^) = (**^)
+  (*^) = distrib (*^)
 
-instance ( InnerSpace u s, InnerSpace s s', VectorSpace s s
+instance ( InnerSpace u s, InnerSpace s s, VectorSpace s s
          , HasBasis a s, HasTrie (Basis a)) =>
      InnerSpace (a :> u) (a :> s) where
-  (<.>) = (<*.>)
+  (<.>) = distrib (<.>)
 
 
 -- infixr 9 @.
@@ -281,7 +231,7 @@ infix  0 >-<
 (>-<) :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s, VectorSpace u s) =>
          (u -> u) -> ((a :> u) -> (a :> s))
       -> (a :> u) -> (a :> u)
-f >-< f' = \ u@(D u0 u') -> D (f u0) ((f' u **^) <$> u')
+f >-< f' = \ u@(D u0 u') -> D (f u0) (f' u *^ u')
 
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
 

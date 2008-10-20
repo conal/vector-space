@@ -1,10 +1,10 @@
-{-# LANGUAGE TypeOperators, FlexibleContexts #-}
+{-# LANGUAGE TypeOperators, FlexibleContexts, TypeFamilies #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
--- {-# OPTIONS_GHC -fglasgow-exts -funbox-strict-fields #-}
+-- {-# OPTIONS_GHC -funbox-strict-fields #-}
 -- {-# OPTIONS_GHC -ddump-simpl-stats -ddump-simpl #-}
 ----------------------------------------------------------------------
 -- |
--- Module      :  Data.LinearMap
+-- Module      :  Data.ALinearMap
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
 -- 
@@ -12,32 +12,33 @@
 -- Stability   :  experimental
 -- 
 -- Linear maps
+-- This version uses ABasis, which requires ghc-6.10 or later.
 ----------------------------------------------------------------------
 
-module Data.LinearMap
+module Data.ALinearMap
   ( (:-*) , linear, lapply
   ) where
 
 import Control.Arrow (first)
 import Data.Function
 
-import Data.VectorSpace
 import Data.MemoTrie
-import Data.Basis
+import Data.AVectorSpace
+import Data.ABasis
 
--- | Linear map, represented a as a memo function from basis to values.
+
+-- | Linear map, represented as a memo-trie from basis to values.
 type u :-* v = Basis u :->: v
 
+-- TODO: Use a regular function from @Basis u@, but memoize it.
+
 -- | Function (assumed linear) as linear map.
-linear :: (VectorSpace u s, VectorSpace v s', HasBasis u s, HasTrie (Basis u)) =>
+linear :: (VectorSpace u, VectorSpace v, HasBasis u, HasTrie (Basis u)) =>
           (u -> v) -> (u :-* v)
 linear f = trie (f . basisValue)
 
 -- | Apply a linear map to a vector.
-lapply :: (VectorSpace u s, VectorSpace v s, HasBasis u s, HasTrie (Basis u)) =>
+lapply :: ( VectorSpace u, VectorSpace v, Scalar u ~ Scalar v
+          , HasBasis u, HasTrie (Basis u) ) =>
           (u :-* v) -> (u -> v)
 lapply lm = linearCombo . fmap (first (untrie lm)) . decompose
-
-
--- TODO: unfst, unsnd, pair, unpair
-

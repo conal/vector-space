@@ -40,6 +40,11 @@ v ^-^ v' = v ^+^ negateV v'
 sumV :: AdditiveGroup v => [v] -> v
 sumV = foldr (^+^) zeroV
 
+instance AdditiveGroup () where
+  zeroV     = ()
+  () ^+^ () = ()
+  negateV   = id
+
 instance AdditiveGroup Double where
   zeroV   = 0.0
   (^+^)   = (+)
@@ -62,17 +67,17 @@ instance (RealFloat v, AdditiveGroup v) => AdditiveGroup (Complex v) where
 instance (AdditiveGroup u,AdditiveGroup v) => AdditiveGroup (u,v) where
   zeroV             = (zeroV,zeroV)
   (u,v) ^+^ (u',v') = (u^+^u',v^+^v')
-  negateV (u,v)     = (negateV u, negateV v)
+  negateV (u,v)     = (negateV u,negateV v)
 
 instance (AdditiveGroup u,AdditiveGroup v,AdditiveGroup w)
     => AdditiveGroup (u,v,w) where
   zeroV                  = (zeroV,zeroV,zeroV)
   (u,v,w) ^+^ (u',v',w') = (u^+^u',v^+^v',w^+^w')
-  negateV (u,v,w)        = (negateV u, negateV v, negateV w)
+  negateV (u,v,w)        = (negateV u,negateV v,negateV w)
 
 
 -- Standard instance for an applicative functor applied to a vector space.
-instance AdditiveGroup v => AdditiveGroup (u->v) where
+instance AdditiveGroup v => AdditiveGroup (a -> v) where
   zeroV   = pure   zeroV
   (^+^)   = liftA2 (^+^)
   negateV = fmap   negateV

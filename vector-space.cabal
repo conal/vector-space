@@ -37,26 +37,30 @@ Library
   Extensions:          
   Build-Depends:       base, MemoTrie
   Exposed-Modules:     
-                     Data.AdditiveGroup
                      Data.VectorSpace
                      Data.Basis
                      Data.LinearMap
                      Data.Maclaurin
+--                   Data.Horner
                      Data.Derivative
                      Data.Cross
                      Data.AffineSpace
                      Data.NumInstances
+    
+  -- This library relies on type families working as well as in 6.9.
+  if impl(ghc < 6.9) {
+    buildable: False
+  }
+  -- More bug fixes in 6.10 allow replacing some fundeps.  After a while,
+  -- when 6.10 is widespread, I'll switch over entirely and eliminate the
+  -- earlier versions.
+  if impl(ghc >= 6.10) {
+    Exposed-Modules:
+                     Data.AVectorSpace
+                     Data.ABasis
+                     Data.ALinearMap
+  }
   ghc-options:         -Wall -O2
   ghc-prof-options:    -prof -auto-all 
 
---  -fno-method-sharing
-
--- Executable Perf
---   main-is:           Perf.hs
---   build-depends:     base, OpenGL, old-time
---   Hs-Source-Dirs:    src, tests/src
---   ghc-options:       -Wall -O2
---   ghc-prof-options:    -prof -auto-all   
-
---                   Data.Horner
 -- For ghc-options: -ddump-simpl-stats -ddump-rules -ddump-simpl -ddump-simpl-phases
