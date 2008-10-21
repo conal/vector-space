@@ -1,16 +1,16 @@
 Name:                vector-space
-Version:             0.4
+Version:             0.4.1
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9)
 Category:            math
 Description:
-  '''vector-space''' provides classes and generic operations for vector
+  /vector-space/ provides classes and generic operations for vector
   spaces and affine spaces.  It also defines a type of infinite towers
   of generalized derivatives.  A generalized derivative is a linear
   transformation rather than one of the common concrete representations
   (scalars, vectors, matrices, ...).
   .
-  '''Warning''': this package depends on type families working fairly well,
+  /Warning/: this package depends on type families working fairly well,
   and requires ghc version at least 6.9.
   .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
@@ -33,6 +33,7 @@ Library
   Extensions:          
   Build-Depends:       base, MemoTrie
   Exposed-Modules:     
+                     Data.AdditiveGroup
                      Data.VectorSpace
                      Data.Basis
                      Data.LinearMap
