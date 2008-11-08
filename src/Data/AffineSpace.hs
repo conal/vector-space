@@ -1,5 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts
-           , FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, TypeFamilies #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.AffineSpace
@@ -24,11 +23,13 @@ infix 4 .+^, .-^, .-.
 -- TODO: Convert AffineSpace from fundep to associated type, and eliminate
 -- FunctionalDependencies above.
 
-class VectorSpace v => AffineSpace p v | p -> v where
+class VectorSpace (AVector p) => AffineSpace p where
+  -- | Associated vector space
+  type AVector p
   -- | Subtract points
-  (.-.)  :: p -> p -> v
+  (.-.)  :: p -> p -> AVector p
   -- | Point plus vector
-  (.+^)  :: p -> v -> p
+  (.+^)  :: p -> AVector p -> p
 
 -- TODO: consider replacing p and v with a type constructor argument:
 -- 
@@ -40,31 +41,35 @@ class VectorSpace v => AffineSpace p v | p -> v where
 -- doubles & floats.
 
 -- | Point minus vector
-(.-^) :: (AffineSpace p v) => p -> v -> p
+(.-^) :: (AffineSpace p) => p -> AVector p -> p
 p .-^ v = p .+^ negateV v
 
 -- | Square of the distance between two points.  Sometimes useful for
 -- efficiency.  See also 'distance'.
-distanceSq :: (AffineSpace p v, InnerSpace v) => p -> p -> Scalar v
+distanceSq :: (AffineSpace p, v ~ AVector p, InnerSpace v) =>
+              p -> p -> Scalar v
 distanceSq = (fmap.fmap) magnitudeSq (.-.)
 
 -- | Distance between two points.  See also 'distanceSq'.
-distance :: (AffineSpace p v, InnerSpace v, Floating (Scalar v))
-         => p -> p -> Scalar v
+distance :: (AffineSpace p, v ~ AVector p, InnerSpace v
+            , s ~ Scalar v, Floating (Scalar v))
+         => p -> p -> s
 distance = (fmap.fmap) sqrt distanceSq
 
 -- | Affine linear interpolation.  Varies from @p@ to @p'@ as @s@ varies
 -- from 0 to 1.  See also 'lerp' (on vector spaces).
-alerp :: AffineSpace p v => p -> p -> Scalar v -> p
+alerp :: AffineSpace p => p -> p -> Scalar (AVector p) -> p
 alerp p p' s = p .+^ (s *^ (p' .-. p))
 
-instance  AffineSpace Double Double where
-  (.-.)  =  (-)
-  (.+^)  =  (+)
+instance  AffineSpace Double where
+  type AVector Double = Double
+  (.-.) =  (-)
+  (.+^) =  (+)
 
-instance  AffineSpace Float Float where
-  (.-.)  =  (-)
-  (.+^)  =  (+)
+instance  AffineSpace Float where
+  type AVector Float = Float
+  (.-.) =  (-)
+  (.+^) =  (+)
 
 -- TODO: pairs & triples.  Functions?
 
