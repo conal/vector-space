@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators, UndecidableInstances
+{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators
            , TypeFamilies, TypeSynonymInstances
   #-}
 {-# OPTIONS_GHC -Wall #-}
@@ -33,7 +33,7 @@ import Data.Derivative
 class HasNormal v where normalVec :: v -> v
 
 -- | Normalized normal vector.  See also 'cross'.
-normal :: (HasNormal v, InnerSpace v s, Floating s) => v -> v
+normal :: (HasNormal v, InnerSpace v, Floating (Scalar v)) => v -> v
 normal = normalized . normalVec
 
 -- | Singleton
@@ -51,20 +51,17 @@ class HasCross2 v where cross2 :: v -> v
 instance AdditiveGroup u => HasCross2 (u,u) where
   cross2 (x,y) = (negateV y,x)  -- or @(y,-x)@?
 
--- "Variable occurs more often in a constraint than in the instance
--- head".  Hence UndecidableInstances.
-
-instance ( HasBasis a s, HasTrie (Basis a)
-         , VectorSpace v s, HasCross2 v) => HasCross2 (a:>v) where
+instance ( HasBasis a, HasTrie (Basis a)
+         , VectorSpace v, HasCross2 v) => HasCross2 (a:>v) where
   -- 2d cross-product is linear
   cross2 = fmapD cross2
 
-instance (HasBasis s s, HasTrie (Basis s), Basis s ~ ()) =>
+instance (HasBasis s, HasTrie (Basis s), Basis s ~ ()) =>
          HasNormal (One s :> Two s) where
   normalVec v = cross2 (derivative v `untrie` ())
 
-instance ( Num s, VectorSpace s s
-         , HasBasis s s, HasTrie (Basis s), Basis s ~ ())
+instance ( Num s, VectorSpace s
+         , HasBasis s, HasTrie (Basis s), Basis s ~ ())
     => HasNormal (Two (One s :> s)) where
   normalVec = unpairD . normalVec . pairD
 
@@ -81,17 +78,17 @@ instance Num s => HasCross3 (s,s,s) where
 
 -- TODO: Eliminate the 'Num' constraint by using 'VectorSpace' operations.
 
-instance (HasBasis a s, HasTrie (Basis a), VectorSpace v s, HasCross3 v) => HasCross3 (a:>v) where
+instance (HasBasis a, HasTrie (Basis a), VectorSpace v, HasCross3 v) => HasCross3 (a:>v) where
   -- 3D cross-product is bilinear (curried linear)
   cross3 = distrib cross3
 
-instance (Num s, HasTrie (Basis (s, s)), HasBasis s s, Basis s ~ ()) =>
+instance (Num s, HasTrie (Basis (s, s)), HasBasis s, Basis s ~ ()) =>
          HasNormal (Two s :> Three s) where
   normalVec v = d (Left ()) `cross3` d (Right ())
    where
      d = untrie (derivative v)
 
-instance ( Num s, VectorSpace s s, HasBasis s s, HasTrie (Basis s)
+instance ( Num s, VectorSpace s, HasBasis s, HasTrie (Basis s)
          , HasNormal (Two s :> Three s))
          => HasNormal (Three (Two s :> s)) where
   normalVec = untripleD . normalVec . tripleD
@@ -99,20 +96,28 @@ instance ( Num s, VectorSpace s s, HasBasis s s, HasTrie (Basis s)
 
 ---- Could go elsewhere
 
-pairD :: (HasBasis a s, HasTrie (Basis a), VectorSpace b s, VectorSpace c s) =>
-         (a:>b,a:>c) -> a:>(b,c)
+pairD :: ( HasBasis a, HasTrie (Basis a)
+         , VectorSpace b, VectorSpace c
+         , Scalar b ~ Scalar c
+         ) => (a:>b,a:>c) -> a:>(b,c)
 pairD (u,v) = liftD2 (,) u v
 
-tripleD :: (HasBasis a s, HasTrie (Basis a), VectorSpace b s, VectorSpace c s, VectorSpace d s) =>
-           (a:>b,a:>c,a:>d) -> a:>(b,c,d)
+tripleD :: ( HasBasis a, HasTrie (Basis a)
+           , VectorSpace b, VectorSpace c, VectorSpace d
+           , Scalar b ~ Scalar c, Scalar c ~ Scalar d
+           ) => (a:>b,a:>c,a:>d) -> a:>(b,c,d)
 tripleD (u,v,w) = liftD3 (,,) u v w
 
-unpairD :: (HasBasis a s, HasTrie (Basis a), VectorSpace a s, VectorSpace b s, VectorSpace c s) =>
-           (a :> (b,c)) -> (a:>b, a:>c)
+unpairD :: ( HasBasis a, HasTrie (Basis a)
+           , VectorSpace a, VectorSpace b, VectorSpace c
+           , Scalar b ~ Scalar c
+           ) => (a :> (b,c)) -> (a:>b, a:>c)
 unpairD d = (fst <$>> d, snd <$>> d)
 
-untripleD :: ( HasBasis a s, HasTrie (Basis a) , VectorSpace a s, VectorSpace b s
-             , VectorSpace c s, VectorSpace d s) =>
+untripleD :: ( HasBasis a, HasTrie (Basis a)
+             , VectorSpace a, VectorSpace b, VectorSpace c, VectorSpace d
+             , Scalar b ~ Scalar c, Scalar c ~ Scalar d
+             ) =>
              (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
 untripleD d =
   ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)

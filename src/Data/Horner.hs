@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
-           , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
+{-# LANGUAGE TypeOperators, MultiParamTypeClasses
+           , TypeSynonymInstances, FlexibleInstances
   #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------

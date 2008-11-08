@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.4.1
+Version:             0.5
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9)
 Category:            math
@@ -44,18 +44,9 @@ Library
                      Data.AffineSpace
                      Data.NumInstances
     
-  -- This library relies on type families working as well as in 6.9.
-  if impl(ghc < 6.9) {
+  -- This library relies on type families working as well as in 6.10.
+  if impl(ghc < 6.10) {
     buildable: False
-  }
-  -- More bug fixes in 6.10 allow replacing some fundeps.  After a while,
-  -- when 6.10 is widespread, I'll switch over entirely and eliminate the
-  -- earlier versions.
-  if impl(ghc >= 6.10) {
-    Exposed-Modules:
-                     Data.AVectorSpace
-                     Data.ABasis
-                     Data.ALinearMap
   }
   ghc-options:         -Wall -O2
   ghc-prof-options:    -prof -auto-all 

@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts
+           , FunctionalDependencies #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.AffineSpace
@@ -20,7 +21,10 @@ import Data.VectorSpace
 
 infix 4 .+^, .-^, .-.
 
-class VectorSpace v s => AffineSpace p v s | p -> v s where
+-- TODO: Convert AffineSpace from fundep to associated type, and eliminate
+-- FunctionalDependencies above.
+
+class VectorSpace v => AffineSpace p v | p -> v where
   -- | Subtract points
   (.-.)  :: p -> p -> v
   -- | Point plus vector
@@ -36,27 +40,31 @@ class VectorSpace v s => AffineSpace p v s | p -> v s where
 -- doubles & floats.
 
 -- | Point minus vector
-(.-^) :: (Num s, AffineSpace p v s) => p -> v -> p
+(.-^) :: (AffineSpace p v) => p -> v -> p
 p .-^ v = p .+^ negateV v
 
 -- | Square of the distance between two points.  Sometimes useful for
 -- efficiency.  See also 'distance'.
-distanceSq :: (AffineSpace p v s, InnerSpace v s) => p -> p -> s
+distanceSq :: (AffineSpace p v, InnerSpace v) => p -> p -> Scalar v
 distanceSq = (fmap.fmap) magnitudeSq (.-.)
 
 -- | Distance between two points.  See also 'distanceSq'.
-distance :: (Floating s, AffineSpace p v s, InnerSpace v s) => p -> p -> s
+distance :: (AffineSpace p v, InnerSpace v, Floating (Scalar v))
+         => p -> p -> Scalar v
 distance = (fmap.fmap) sqrt distanceSq
 
 -- | Affine linear interpolation.  Varies from @p@ to @p'@ as @s@ varies
 -- from 0 to 1.  See also 'lerp' (on vector spaces).
-alerp :: AffineSpace p v s => p -> p -> s -> p
+alerp :: AffineSpace p v => p -> p -> Scalar v -> p
 alerp p p' s = p .+^ (s *^ (p' .-. p))
 
-instance  AffineSpace Double Double Double where
+instance  AffineSpace Double Double where
   (.-.)  =  (-)
   (.+^)  =  (+)
 
-instance  AffineSpace Float Float Float where
+instance  AffineSpace Float Float where
   (.-.)  =  (-)
   (.+^)  =  (+)
+
+-- TODO: pairs & triples.  Functions?
+

@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
-           , TypeSynonymInstances, FlexibleInstances, FunctionalDependencies
-           , FlexibleContexts
+           , TypeSynonymInstances, FlexibleInstances
+           , FlexibleContexts, TypeFamilies
            , ScopedTypeVariables
   #-}
 
@@ -30,7 +30,7 @@
 
 module Data.Maclaurin
   (
-    (:>), powVal, derivative --, derivativeAt
+    (:>), powVal, derivative
   , (:~>), dZero, pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
@@ -56,35 +56,22 @@ data a :> b = D { powVal :: b, derivative :: a :-* (a :> b) }
 -- | Infinitely differentiable functions
 type a :~> b = a -> (a:>b)
 
--- -- | Sampled derivative.  For avoiding an awkward typing problem related
--- -- to the two required 'VectorSpace' instances.
--- derivativeAt :: (VectorSpace b s) =>
---                 (a :> b) -> a -> (a :> b)
--- derivativeAt d = lapply (derivative d)
-
--- The crucial point here is for 'lapply' to be interpreted with respect to
--- the 'VectorSpace' instance in this module, not Mac.
-
--- The argument order for 'derivativeAt' allows partial evaluation, which
--- is useful in power series representations for which 'derivative' is not
--- free (Horner).
-
 -- Handy for missing methods.
 noOv :: String -> a
 noOv op = error (op ++ ": not defined on a :> b")
 
 -- | Derivative tower full of 'zeroV'.
-dZero :: (AdditiveGroup b, HasBasis a s, HasTrie (Basis a)) => a:>b
+dZero :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => a:>b
 dZero = pureD zeroV
 
 -- | Constant derivative tower.
-pureD :: (AdditiveGroup b, HasBasis a s, HasTrie (Basis a)) => b -> a:>b
+pureD :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => b -> a:>b
 pureD b = b `D` pure dZero
 
 
 infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
-fmapD, (<$>>) :: (HasTrie (Basis a), VectorSpace b s) =>
+fmapD, (<$>>) :: (HasTrie (Basis a), VectorSpace b) =>
                  (b -> c) -> (a :> b) -> (a :> c)
 fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
 
@@ -97,14 +84,14 @@ fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
 -- D f0 f' <*>> D x0 x' = D (f0 x0) (liftA2 (<*>>) f' x')
 
 -- | Apply a /linear/ binary function over derivative towers.
-liftD2 :: (HasTrie (Basis a), VectorSpace b s, VectorSpace c s, VectorSpace d s) =>
+liftD2 :: (HasTrie (Basis a), VectorSpace b, VectorSpace c, VectorSpace d) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
 liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftA2 (liftD2 f) b' c')
 
 -- | Apply a /linear/ ternary function over derivative towers.
 liftD3 :: ( HasTrie (Basis a)
-          , VectorSpace b s, VectorSpace c s
-          , VectorSpace d s, VectorSpace e s ) =>
+          , VectorSpace b, VectorSpace c
+          , VectorSpace d, VectorSpace e ) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
 liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c' d')
@@ -113,8 +100,9 @@ liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c'
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-idD :: ( VectorSpace u s, VectorSpace (u :> u) (u :> s), VectorSpace s s
-       , HasBasis u s, HasTrie (Basis u)) =>
+idD :: ( VectorSpace u, s ~ Scalar u
+       , VectorSpace (u :> u), VectorSpace s
+       , HasBasis u, HasTrie (Basis u)) =>
        u :~> u
 idD = linearD id
 
@@ -123,9 +111,15 @@ idD = linearD id
 
 -- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
-linearD :: ( HasBasis u s, HasTrie (Basis u)
-           , VectorSpace v s, VectorSpace s s ) =>
+linearD :: ( HasBasis u, HasTrie (Basis u)
+           , VectorSpace v ) =>
            (u -> v) -> (u :~> v)
+
+-- f :: u -> v
+
+-- pureD . f :: u -> u:>v
+
+-- linear (pureD . f) :: 
 
 -- linearD f u = f u `D` linear (pureD . f)
 
@@ -159,30 +153,27 @@ linearD f = \ u -> f u `D` d
 -- linearD f = (`D` linear (pureD . f)) . f
 
 
-
--- TODO: revise two previous signatures when i've added the VectorSpace instance for u:>v
-
 -- Other examples of linear functions
 
 -- | Differentiable version of 'fst'
-fstD :: ( HasBasis a s, HasTrie (Basis a)
-        , HasBasis b s, HasTrie (Basis b)
-        , VectorSpace s s
+fstD :: ( HasBasis a, HasTrie (Basis a)
+        , HasBasis b, HasTrie (Basis b)
+        , Scalar a ~ Scalar b
         ) => (a,b) :~> a
 fstD = linearD fst
 
 -- | Differentiable version of 'snd'
-sndD :: ( HasBasis a s, HasTrie (Basis a)
-        , HasBasis b s, HasTrie (Basis b)
-        , VectorSpace s s
+sndD :: ( HasBasis a, HasTrie (Basis a)
+        , HasBasis b, HasTrie (Basis b)
+        , Scalar a ~ Scalar b
         ) => (a,b) :~> b
 sndD = linearD snd
 
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distrib :: ( HasBasis a s, HasTrie (Basis a)
-           , VectorSpace b s, VectorSpace c s, VectorSpace u s
+distrib :: ( HasBasis a, HasTrie (Basis a), VectorSpace u
+           -- , VectorSpace b, VectorSpace c
            ) => (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 distrib op u@(D u0 u') v@(D v0 v') =
@@ -201,20 +192,23 @@ instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
-instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s) => AdditiveGroup (a :> u) where
+instance (HasBasis a, HasTrie (Basis a), VectorSpace u) => AdditiveGroup (a :> u) where
   zeroV   = pureD  zeroV    -- or dZero
   negateV = fmapD  negateV
   (^+^)   = liftD2 (^+^)
 
-instance (HasBasis a s, HasTrie (Basis a), VectorSpace u s, VectorSpace s s)
-         => VectorSpace (a :> u) (a :> s) where
-  (*^) = distrib (*^)
+instance ( HasBasis a, HasTrie (Basis a)
+         , VectorSpace u, s ~ Scalar u
+         -- , VectorSpace s, s ~ Scalar s
+         )
+        => VectorSpace (a :> u) where
+  type Scalar (a :> u) = (a :> Scalar u)
+  (*^) = distrib (*^)                     
 
-instance ( InnerSpace u s, InnerSpace s s, VectorSpace s s
-         , HasBasis a s, HasTrie (Basis a)) =>
-     InnerSpace (a :> u) (a :> s) where
+instance ( InnerSpace u, s ~ Scalar u, InnerSpace s, s ~ Scalar s
+         , HasBasis a, HasTrie (Basis a)) =>
+     InnerSpace (a :> u) where
   (<.>) = distrib (<.>)
-
 
 -- infixr 9 @.
 -- -- | Chain rule.  See also '(>-<)'.
@@ -228,14 +222,17 @@ instance ( InnerSpace u s, InnerSpace s s, VectorSpace s s
 infix  0 >-<
 
 -- | Specialized chain rule.  See also '(\@.)'
-(>-<) :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s, VectorSpace u s) =>
-         (u -> u) -> ((a :> u) -> (a :> s))
+(>-<) :: (HasBasis a, HasTrie (Basis a), VectorSpace u) =>
+         (u -> u) -> ((a :> u) -> (a :> Scalar u))
       -> (a :> u) -> (a :> u)
 f >-< f' = \ u@(D u0 u') -> D (f u0) (f' u *^ u')
 
+
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
 
-instance (HasBasis a s, HasTrie (Basis a), Num s, VectorSpace s s) => Num (a:>s) where
+instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
+         , Num s, VectorSpace s, Scalar s ~ s)
+      => Num (a:>s) where
   fromInteger = pureD . fromInteger
   (+) = liftD2  (+)
   (-) = liftD2  (-)
@@ -244,7 +241,8 @@ instance (HasBasis a s, HasTrie (Basis a), Num s, VectorSpace s s) => Num (a:>s)
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
 
-instance (HasBasis a s, HasTrie (Basis a), Fractional s, VectorSpace s s)
+instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
+         , Fractional s, VectorSpace s, Scalar s ~ s)
          => Fractional (a:>s) where
   fromRational = pureD . fromRational
   recip        = recip >-< recip sqr
@@ -252,7 +250,8 @@ instance (HasBasis a s, HasTrie (Basis a), Fractional s, VectorSpace s s)
 sqr :: Num a => a -> a
 sqr x = x*x
 
-instance (HasBasis a s, HasTrie (Basis a), Floating s, VectorSpace s s)
+instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
+         , Floating s, VectorSpace s, Scalar s ~ s)
          => Floating (a:>s) where
   pi    = pureD pi
   exp   = exp   >-< exp
