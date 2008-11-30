@@ -13,10 +13,11 @@
 
 module Data.AdditiveGroup
   ( 
-    AdditiveGroup(..), (^-^), sumV
+    AdditiveGroup(..), (^-^), sumV, Sum
   ) where
 
 import Control.Applicative
+import Data.Monoid (Monoid(..))
 import Data.Complex hiding (magnitude)
 
 import Data.MemoTrie
@@ -39,6 +40,7 @@ v ^-^ v' = v ^+^ negateV v'
 -- | Sum over several vectors
 sumV :: AdditiveGroup v => [v] -> v
 sumV = foldr (^+^) zeroV
+
 
 instance AdditiveGroup () where
   zeroV     = ()
@@ -87,3 +89,21 @@ instance (HasTrie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
   zeroV   = pure   zeroV
   (^+^)   = liftA2 (^+^)
   negateV = fmap   negateV
+
+
+-- | Monoid under group addition.  Alternative to the @Sum@ in
+-- "Data.Monoid", which uses 'Num' instead of 'AdditiveGroup'.
+newtype Sum a = Sum a
+  deriving (Eq, Ord, Read, Show, Bounded)
+
+instance Functor Sum where
+  fmap f (Sum a) = Sum (f a)
+
+instance Applicative Sum where
+  pure a = Sum a
+  Sum f <*> Sum x = Sum (f x)
+
+instance AdditiveGroup a => Monoid (Sum a) where
+  mempty  = Sum zeroV
+  mappend = liftA2 (^+^)
+
