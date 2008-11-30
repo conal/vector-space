@@ -13,7 +13,7 @@
 
 module Data.AdditiveGroup
   ( 
-    AdditiveGroup(..), (^-^), sumV, Sum
+    AdditiveGroup(..), (^-^), sumV, Sum(..)
   ) where
 
 import Control.Applicative
