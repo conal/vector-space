@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeOperators
            , TypeFamilies, UndecidableInstances
  #-}
+{-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :   Data.VectorSpace
@@ -62,8 +63,13 @@ v ^/ s = (1/s) *^ v
 (^*) = flip (*^)
 
 -- | Linear interpolation between @a@ (when @t==0@) and @b@ (when @t==1@).
-lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
-lerp a b t = (1-t)*^a ^+^ t*^b
+
+-- lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
+lerp :: VectorSpace v => v -> v -> Scalar v -> v
+lerp a b t = a ^+^ t *^ (b ^-^ a)
+
+-- lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
+-- lerp a b t = (1-t)*^a ^+^ t*^b
 
 -- | Square of the length of a vector.  Sometimes useful for efficiency.
 -- See also 'magnitude'.

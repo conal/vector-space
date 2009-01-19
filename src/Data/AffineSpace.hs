@@ -16,6 +16,8 @@ module Data.AffineSpace
     AffineSpace(..), (.-^), distanceSq, distance, alerp
   ) where
 
+import Control.Applicative (liftA2)
+
 import Data.VectorSpace
 
 infix 4 .+^, .-^, .-.
@@ -23,53 +25,59 @@ infix 4 .+^, .-^, .-.
 -- TODO: Convert AffineSpace from fundep to associated type, and eliminate
 -- FunctionalDependencies above.
 
-class VectorSpace (AVector p) => AffineSpace p where
+class AdditiveGroup (Diff p) => AffineSpace p where
   -- | Associated vector space
-  type AVector p
+  type Diff p
   -- | Subtract points
-  (.-.)  :: p -> p -> AVector p
+  (.-.)  :: p -> p -> Diff p
   -- | Point plus vector
-  (.+^)  :: p -> AVector p -> p
-
--- TODO: consider replacing p and v with a type constructor argument:
--- 
--- class VectorSpace' v => AffineSpace p v | p -> v where
---   (.-.)  :: p s -> p s -> v s
---   (.+^)  :: p s -> v s -> p s
--- 
--- Perhaps with constraints on s.  We couldn't then define instances for
--- doubles & floats.
+  (.+^)  :: p -> Diff p -> p
 
 -- | Point minus vector
-(.-^) :: (AffineSpace p) => p -> AVector p -> p
+(.-^) :: AffineSpace p => p -> Diff p -> p
 p .-^ v = p .+^ negateV v
 
 -- | Square of the distance between two points.  Sometimes useful for
 -- efficiency.  See also 'distance'.
-distanceSq :: (AffineSpace p, v ~ AVector p, InnerSpace v) =>
+distanceSq :: (AffineSpace p, v ~ Diff p, InnerSpace v) =>
               p -> p -> Scalar v
 distanceSq = (fmap.fmap) magnitudeSq (.-.)
 
 -- | Distance between two points.  See also 'distanceSq'.
-distance :: (AffineSpace p, v ~ AVector p, InnerSpace v
+distance :: (AffineSpace p, v ~ Diff p, InnerSpace v
             , s ~ Scalar v, Floating (Scalar v))
          => p -> p -> s
 distance = (fmap.fmap) sqrt distanceSq
 
 -- | Affine linear interpolation.  Varies from @p@ to @p'@ as @s@ varies
 -- from 0 to 1.  See also 'lerp' (on vector spaces).
-alerp :: AffineSpace p => p -> p -> Scalar (AVector p) -> p
+alerp :: (AffineSpace p, VectorSpace (Diff p)) =>
+         p -> p -> Scalar (Diff p) -> p
 alerp p p' s = p .+^ (s *^ (p' .-. p))
 
 instance  AffineSpace Double where
-  type AVector Double = Double
+  type Diff Double = Double
   (.-.) =  (-)
   (.+^) =  (+)
 
 instance  AffineSpace Float where
-  type AVector Float = Float
+  type Diff Float = Float
   (.-.) =  (-)
   (.+^) =  (+)
 
--- TODO: pairs & triples.  Functions?
 
+instance (AffineSpace p, AffineSpace q) => AffineSpace (p,q) where
+  type Diff (p,q)   = (Diff p, Diff q)
+  (p,q) .-. (p',q') = (p .-. p', q .-. q')
+  (p,q) .+^ (u,v)   = (p .+^ u, q .+^ v)
+
+instance (AffineSpace p, AffineSpace q, AffineSpace r) => AffineSpace (p,q,r) where
+  type Diff (p,q,r)      = (Diff p, Diff q, Diff r)
+  (p,q,r) .-. (p',q',r') = (p .-. p', q .-. q', r .-. r')
+  (p,q,r) .+^ (u,v,w)    = (p .+^ u, q .+^ v, r .+^ w)
+
+
+instance (AffineSpace p) => AffineSpace (a -> p) where
+  type Diff (a -> p) = a -> Diff p
+  (.-.)              = liftA2 (.-.)
+  (.+^)              = liftA2 (.+^)
