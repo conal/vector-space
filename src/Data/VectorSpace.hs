@@ -68,9 +68,6 @@ v ^/ s = (1/s) *^ v
 lerp :: VectorSpace v => v -> v -> Scalar v -> v
 lerp a b t = a ^+^ t *^ (b ^-^ a)
 
--- lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
--- lerp a b t = (1-t)*^a ^+^ t*^b
-
 -- | Square of the length of a vector.  Sometimes useful for efficiency.
 -- See also 'magnitude'.
 magnitudeSq :: (InnerSpace v, s ~ Scalar v) => v -> s
