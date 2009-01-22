@@ -71,32 +71,37 @@ pureD b = b `D` pure dZero
 
 infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
-fmapD, (<$>>) :: (HasTrie (Basis a), VectorSpace b) =>
+fmapD, (<$>>) :: (HasTrie (Basis a)) =>
                  (b -> c) -> (a :> b) -> (a :> c)
 fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
 
 (<$>>) = fmapD
 
--- infixl 4 <*>>
--- -- | Like '(<*>)' for derivative towers.
--- (<*>>) :: (HasTrie (Basis a), VectorSpace b s, VectorSpace c s) =>
---           (a :> (b -> c)) -> (a :> b) -> (a :> c)
--- D f0 f' <*>> D x0 x' = D (f0 x0) (liftA2 (<*>>) f' x')
-
 -- | Apply a /linear/ binary function over derivative towers.
-liftD2 :: (HasTrie (Basis a), VectorSpace b, VectorSpace c, VectorSpace d) =>
+liftD2 :: HasTrie (Basis a) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
 liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftA2 (liftD2 f) b' c')
 
+
 -- | Apply a /linear/ ternary function over derivative towers.
-liftD3 :: ( HasTrie (Basis a)
-          , VectorSpace b, VectorSpace c
-          , VectorSpace d, VectorSpace e ) =>
+liftD3 :: HasTrie (Basis a) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
 liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c' d')
 
--- TODO: try defining liftD2, liftD3 in terms of (<*>>) above
+-- TODO: Define liftD2, liftD3 in terms of (<*>>) Compare generated code
+-- for speed.
+
+-- infixl 4 <*>>
+-- -- | Like '(<*>)' for derivative towers.
+-- (<*>>) :: (HasTrie (Basis a)) =>
+--           (a :> (b -> c)) -> (a :> b) -> (a :> c)
+-- D f0 f' <*>> D x0 x' = D (f0 x0) (liftA2 (<*>>) f' x')
+
+-- liftD2 f a b = (f <$>> a) <*>> b
+
+-- liftD3 f a b c = liftD2 f a b <*>> c
+
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
@@ -111,23 +116,10 @@ idD = linearD id
 
 -- | Every linear function has a constant derivative equal to the function
 -- itself (as a linear map).
-linearD :: ( HasBasis u, HasTrie (Basis u)
-           , VectorSpace v ) =>
+linearD :: (HasBasis u, HasTrie (Basis u), AdditiveGroup v) =>
            (u -> v) -> (u :~> v)
 
--- f :: u -> v
-
--- pureD . f :: u -> u:>v
-
--- linear (pureD . f) :: 
-
 -- linearD f u = f u `D` linear (pureD . f)
-
--- data a :> b = D { powVal :: b, derivative :: a :-* (a :> b) }
-
--- linear :: (VectorSpace u s, VectorSpace v s, HasBasis u s, HasTrie (Basis u)) =>
---           (u -> v) -> (u :-* v)
-
 
 -- HEY!  I think there's a hugely wasteful recomputation going on in
 -- 'linearD' above.  Note the definition of 'linear':
@@ -141,8 +133,6 @@ linearD :: ( HasBasis u, HasTrie (Basis u)
 -- The trie gets rebuilt for each @u@.
 
 -- Look for similar problems.
-
--- 
 
 linearD f = \ u -> f u `D` d
  where
@@ -172,7 +162,7 @@ sndD = linearD snd
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distrib :: (HasBasis a, HasTrie (Basis a), VectorSpace u) =>
+distrib :: (HasBasis a, HasTrie (Basis a), AdditiveGroup u) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 -- distrib op u@(D u0 u') v@(D v0 v') =
@@ -199,21 +189,18 @@ instance Show b => Show (a :> b) where show    = noOv "show"
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
-instance (HasBasis a, HasTrie (Basis a), VectorSpace u) => AdditiveGroup (a :> u) where
+instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :> u) where
   zeroV   = pureD  zeroV    -- or dZero
   negateV = fmapD  negateV
   (^+^)   = liftD2 (^+^)
 
-instance ( HasBasis a, HasTrie (Basis a)
-         , VectorSpace u, s ~ Scalar u
-         -- , VectorSpace s, s ~ Scalar s
-         )
-        => VectorSpace (a :> u) where
+instance (HasBasis a, HasTrie (Basis a), VectorSpace u)
+      => VectorSpace (a :> u) where
   type Scalar (a :> u) = (a :> Scalar u)
   (*^) = distrib (*^)                     
 
-instance ( InnerSpace u, s ~ Scalar u, InnerSpace s, s ~ Scalar s
-         , HasBasis a, HasTrie (Basis a)) =>
+instance ( InnerSpace u, s ~ Scalar u, AdditiveGroup s
+         , HasBasis a, HasTrie (Basis a) ) =>
      InnerSpace (a :> u) where
   (<.>) = distrib (<.>)
 
@@ -238,7 +225,8 @@ f >-< f' = \ u@(D u0 u') -> D (f u0) (f' u *^ u')
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
 
 instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
-         , Num s, VectorSpace s, Scalar s ~ s)
+         , Num s, VectorSpace s, Scalar s ~ s
+         )
       => Num (a:>s) where
   fromInteger = pureD . fromInteger
   (+) = liftD2  (+)

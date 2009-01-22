@@ -33,12 +33,12 @@ type u :-* v = Basis u :->: v
 -- TODO: Use a regular function from @Basis u@, but memoize it.
 
 -- | Function (assumed linear) as linear map.
-linear :: (VectorSpace u, VectorSpace v, HasBasis u, HasTrie (Basis u)) =>
+linear :: (HasBasis u, HasTrie (Basis u)) =>
           (u -> v) -> (u :-* v)
 linear f = trie (f . basisValue)
 
 -- | Apply a linear map to a vector.
-lapply :: ( VectorSpace u, VectorSpace v, Scalar u ~ Scalar v
+lapply :: ( VectorSpace v, Scalar u ~ Scalar v
           , HasBasis u, HasTrie (Basis u) ) =>
           (u :-* v) -> (u -> v)
 lapply lm = linearCombo . fmap (first (untrie lm)) . decompose
