@@ -172,20 +172,27 @@ sndD = linearD snd
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distrib :: ( HasBasis a, HasTrie (Basis a), VectorSpace u
-           -- , VectorSpace b, VectorSpace c
-           ) => (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
+distrib :: (HasBasis a, HasTrie (Basis a), VectorSpace u) =>
+           (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
-distrib op u@(D u0 u') v@(D v0 v') =
-  D (u0 `op` v0) (trie (\ da -> distrib op u (v' `untrie` da) ^+^
-                                distrib op (u' `untrie` da) v))
-
+-- distrib op u@(D u0 u') v@(D v0 v') =
+--   D (u0 `op` v0) (trie (\ da -> distrib op u (v' `untrie` da) ^+^
+--                                 distrib op (u' `untrie` da) v))
 
 -- TODO: look for a simpler definition of distrib.  See the applicative
 -- instance for @(:->:) a@, or define @inTrie2@.
 
--- TODO: This distrib is exponential in increasing degree.  Switch to the
--- Horner representation.  See /The Music of Streams/ by Doug McIlroy.
+
+distrib op u@(D u0 u') v@(D v0 v') = D (u0 `op` v0) (inTrie2 comb u' v')
+ where
+   comb uf vf da = distrib op u (vf da) ^+^ distrib op (uf da) v
+
+--   comb uf vf = distrib op u . vf ^+^ flip (distrib op) v . uf
+
+
+-- TODO: I think this distrib is exponential in increasing degree.  Switch
+-- to the Horner representation.  See /The Music of Streams/ by Doug
+-- McIlroy.
 
 
 instance Show b => Show (a :> b) where show    = noOv "show"

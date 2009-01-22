@@ -28,7 +28,7 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base, MemoTrie
+  Build-Depends:       base, MemoTrie >= 0.4.2
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace
