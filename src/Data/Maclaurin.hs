@@ -162,22 +162,24 @@ sndD = linearD snd
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.
-distrib :: (HasBasis a, HasTrie (Basis a), AdditiveGroup u) =>
+distrib :: forall a b c u.
+           (HasBasis a, HasTrie (Basis a), AdditiveGroup u) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 -- distrib op u@(D u0 u') v@(D v0 v') =
---   D (u0 `op` v0) (trie (\ da -> distrib op u (v' `untrie` da) ^+^
---                                 distrib op (u' `untrie` da) v))
-
--- TODO: look for a simpler definition of distrib.  See the applicative
--- instance for @(:->:) a@, or define @inTrie2@.
-
+--   D (u0 `op` v0) (trie (\ e -> distrib op u (v' `untrie` e) ^+^
+--                                distrib op (u' `untrie` e) v))
 
 distrib op u@(D u0 u') v@(D v0 v') = D (u0 `op` v0) (inTrie2 comb u' v')
  where
-   comb uf vf da = distrib op u (vf da) ^+^ distrib op (uf da) v
+   -- comb :: (Basis a -> a :> b) -> (Basis a -> a :> c) -> (Basis a -> a :> u)
+   comb uf vf (e :: Basis a) =
+     distrib op u (vf e) ^+^ distrib op (uf e) v
 
 --   comb uf vf = distrib op u . vf ^+^ flip (distrib op) v . uf
+
+-- TODO: Look for a formulation of distrib that eliminates the explicit
+-- conversion between functions and tries.  Maybe something with trie addition.
 
 
 -- TODO: I think this distrib is exponential in increasing degree.  Switch
