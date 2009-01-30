@@ -31,7 +31,7 @@
 module Data.Maclaurin
   (
     (:>), powVal, derivative
-  , (:~>), dZero, pureD
+  , (:~>), pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
   , linearD, distrib
@@ -60,13 +60,15 @@ type a :~> b = a -> (a:>b)
 noOv :: String -> a
 noOv op = error (op ++ ": not defined on a :> b")
 
--- | Derivative tower full of 'zeroV'.
-dZero :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => a:>b
-dZero = pureD zeroV
+-- -- | Derivative tower full of 'zeroV'.
+-- dZero :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => a:>b
+-- dZero = pureD zeroV
 
 -- | Constant derivative tower.
 pureD :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => b -> a:>b
-pureD b = b `D` pure dZero
+pureD b = b `D` zeroV
+
+-- pureD b = b `D` pure dZero
 
 
 infixl 4 <$>>

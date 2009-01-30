@@ -136,14 +136,33 @@ instance ( InnerSpace u, s ~ Scalar u
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
 
--- Standard instance for an applicative functor applied to a vector space.
+-- Standard instances for a functor applied to a vector space.
+
+-- For 'Maybe', Nothing represents 'zeroV'.  Useful for optimization, since
+-- we might not be able to test for 'zeroV', e.g., functions and infinite
+-- derivative towers.
+instance VectorSpace v => VectorSpace (Maybe v) where
+  type Scalar (Maybe v) = Scalar v
+  (*^) s = fmap (s *^)
+
 instance VectorSpace v => VectorSpace (a -> v) where
   type Scalar (a -> v) = Scalar v
   (*^) s = fmap (s *^)
 
--- No 'InnerSpace' instance for @(a -> v)@.
-
 instance (HasTrie a, VectorSpace v)
          => VectorSpace (a :->: v) where
   type Scalar (a :->: v) = Scalar v
-  (*^) s = fmap ((*^) s)
+  (*^) s = fmap (s *^)
+
+-- No 'InnerSpace' instance for @a -> v@.
+
+
+instance (InnerSpace a, AdditiveGroup (Scalar a)) => InnerSpace (Maybe a) where
+  -- dotting with zero (vector) yields zero (scalar)
+  Nothing <.> _     = zeroV
+  _ <.> Nothing     = zeroV
+  Just u <.> Just v = u <.> v
+
+--   mu <.> mv = fromMaybe zeroV (liftA2 (<.>) mu mv)
+
+--   (<.>) = (fmap.fmap) (fromMaybe zeroV) (liftA2 (<.>))

@@ -84,6 +84,16 @@ instance AdditiveGroup v => AdditiveGroup (a -> v) where
   (^+^)   = liftA2 (^+^)
   negateV = fmap   negateV
 
+
+-- Maybe is handled like the Maybe-of-Sum monoid
+instance AdditiveGroup a => AdditiveGroup (Maybe a) where
+  zeroV = Nothing
+  Nothing ^+^ b'      = b'
+  a' ^+^ Nothing      = a'
+  Just a' ^+^ Just b' = Just (a' ^+^ b')
+  negateV = fmap negateV
+
+
 -- Memo tries
 instance (HasTrie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
   zeroV   = pure   zeroV
