@@ -16,11 +16,11 @@
 
 module Data.LinearMap
   ( (:-*) , linear, lapply, atBasis, idL, (*.*)
-  , liftMS, liftMS2, liftMS3  -- to remove
+  , liftMS, liftMS2, liftMS3
   , liftL, liftL2, liftL3
   ) where
 
-import Control.Applicative ((<$>),liftA2,liftA3)
+import Control.Applicative ((<$>),Applicative,liftA2,liftA3)
 import Control.Arrow       (first)
 
 import Data.MemoTrie      ((:->:)(..))
@@ -33,10 +33,18 @@ import Data.Basis         (HasBasis(..), linearCombo)
 -- class constraints interfere.  They're almost an Arrow also, but for the
 -- constraints and the generality of arr.
 
+-- | An optional additive value
+type MSum a = Maybe (Sum a)
+
+-- nsum :: MSum a
+-- nsum = Nothing
+
+jsum :: a -> MSum a
+jsum = Just . Sum
+
 -- | Linear map, represented as an optional memo-trie from basis to
 -- values, where 'Nothing' means the zero map (an optimization).
-
-type u :-* v = Maybe (Sum (Basis u :->: v))
+type u :-* v = MSum (Basis u :->: v)
 
 -- TODO: Try a partial trie instead, excluding (known) zero elements.
 -- Then 'lapply' could be much faster for sparse situations.  Make sure to
@@ -49,9 +57,9 @@ type u :-* v = Maybe (Sum (Basis u :->: v))
 -- | Function (assumed linear) as linear map.
 linear :: (HasBasis u, HasTrie (Basis u)) =>
           (u -> v) -> (u :-* v)
-linear f = Just (Sum (trie (f . basisValue)))
+linear f = jsum (trie (f . basisValue))
 
-atZ :: AdditiveGroup b => (a -> b) -> (Maybe (Sum a) -> b)
+atZ :: AdditiveGroup b => (a -> b) -> (MSum a -> b)
 atZ f = maybe zeroV (f . getSum)
 
 -- atZ :: AdditiveGroup b => (a -> b) -> (a -> b)
@@ -61,7 +69,7 @@ atZ f = maybe zeroV (f . getSum)
 -- work around a typing problem in 'derivAtBasis'.
 -- atBasis :: (AdditiveGroup v, HasTrie (Basis u)) =>
 --            (u :-* v) -> Basis u -> v
-atBasis :: (HasTrie a, AdditiveGroup b) => Maybe (Sum (a :->: b)) -> a -> b
+atBasis :: (HasTrie a, AdditiveGroup b) => MSum (a :->: b) -> a -> b
 m `atBasis` b = atZ (`untrie` b) m
 
 -- | Apply a linear map to a vector.
@@ -125,7 +133,7 @@ infixr 9 *.*
 
 liftMS :: (AdditiveGroup a) =>
           (a -> b)
-       -> (Maybe (Sum a) -> Maybe (Sum b))
+       -> (MSum a -> MSum b)
 -- liftMS _ Nothing = Nothing
 -- liftMS h ma = Just (Sum (h (z ma)))
 
@@ -133,39 +141,38 @@ liftMS = fmap.fmap
 
 liftMS2 :: (AdditiveGroup a, AdditiveGroup b) =>
            (a -> b -> c) ->
-           (Maybe (Sum a) -> Maybe (Sum b) -> Maybe (Sum c))
+           (MSum a -> MSum b -> MSum c)
 liftMS2 _ Nothing Nothing = Nothing
-liftMS2 h ma mb = Just (Sum (h (z ma) (z mb)))
+liftMS2 h ma mb = Just (Sum (h (fromMS ma) (fromMS mb)))
 
 liftMS3 :: (AdditiveGroup a, AdditiveGroup b, AdditiveGroup c) =>
            (a -> b -> c -> d) ->
-           (Maybe (Sum a) -> Maybe (Sum b) -> Maybe (Sum c) -> Maybe (Sum d))
+           (MSum a -> MSum b -> MSum c -> MSum d)
 liftMS3 _ Nothing Nothing Nothing = Nothing
-liftMS3 h ma mb mc = Just (Sum (h (z ma) (z mb) (z mc)))
+liftMS3 h ma mb mc = Just (Sum (h (fromMS ma) (fromMS mb) (fromMS mc)))
 
-z :: AdditiveGroup u => Maybe (Sum u) -> u
-z Nothing        = zeroV
-z (Just (Sum u)) = u
+fromMS :: AdditiveGroup u => MSum u -> u
+fromMS Nothing        = zeroV
+fromMS (Just (Sum u)) = u
 
 
--- type u :-* v = Maybe (Sum (Basis u :->: v))
-
--- I'd rather keep liftMS* private and export just the liftL* below, but
--- using the liftL* triggers a type checking bug.
-
-liftL :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b) =>
-         (b -> c)
-      -> ((a :-* b) -> (a :-* c))
+-- | Apply a linear function to each element of a linear map.
+-- @liftL f l == linear f *.* l@, but works more efficiently.
+liftL :: (Functor f, AdditiveGroup (f a)) =>
+         (a -> b) -> MSum (f a) -> MSum (f b)
 liftL = liftMS . fmap
 
-liftL2 :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b, AdditiveGroup c) =>
-          (b -> c -> d)
-       -> ((a :-* b) -> (a :-* c) -> (a :-* d))
+-- | Apply a linear binary function (not to be confused with a bilinear
+-- function) to each element of a linear map.
+liftL2 :: (Applicative f, AdditiveGroup (f a), AdditiveGroup (f b)) =>
+          (a -> b -> c)
+       -> (MSum (f a) -> MSum (f b) -> MSum (f c))
 liftL2 = liftMS2 . liftA2
 
-liftL3 :: ( HasBasis a, HasTrie (Basis a)
-          , AdditiveGroup b, AdditiveGroup c, AdditiveGroup d) =>
-          (b -> c -> d -> e)
-       -> ((a :-* b) -> (a :-* c) -> (a :-* d) -> (a :-* e))
+-- | Apply a linear ternary function (not to be confused with a trilinear
+-- function) to each element of a linear map.
+liftL3 :: ( Applicative f
+          , AdditiveGroup (f a), AdditiveGroup (f b), AdditiveGroup (f c)) =>
+          (a -> b -> c -> d)
+       -> (MSum (f a) -> MSum (f b) -> MSum (f c) -> MSum (f d))
 liftL3 = liftMS3 . liftA3
-

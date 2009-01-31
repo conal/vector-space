@@ -42,7 +42,6 @@ module Data.Maclaurin
   ) 
     where
 
-import Control.Applicative
 
 import Data.VectorSpace
 import Data.NumInstances ()
@@ -77,27 +76,18 @@ infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
 fmapD, (<$>>) :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b) =>
                  (b -> c) -> (a :> b) -> (a :> c)
-
--- fmapD f (D b0 b') = D (f b0) ((liftMS.fmap.fmapD) f b')
-
 fmapD f = lf
  where
-   lf (D b0 b') = D (f b0) ((liftMS.fmap) lf b')
-
--- TODO: try again with liftL in place of liftMS.fmap and similarly for
--- liftD2, liftD3
+   lf (D b0 b') = D (f b0) (liftL lf b')
 
 (<$>>) = fmapD
 
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b, AdditiveGroup c) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-
--- liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) ((liftMS2.liftA2.liftD2) f b' c')
-
 liftD2 f = lf
  where
-   lf (D b0 b') (D c0 c') = D (f b0 c0) ((liftMS2.liftA2) lf b' c')
+   lf (D b0 b') (D c0 c') = D (f b0 c0) (liftL2 lf b' c')
 
 
 -- | Apply a /linear/ ternary function over derivative towers.
@@ -105,26 +95,17 @@ liftD3 :: (HasBasis a, HasTrie (Basis a)
           , AdditiveGroup b, AdditiveGroup c, AdditiveGroup d) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-
--- liftD3 f (D b0 b') (D c0 c') (D d0 d') =
---   D (f b0 c0 d0) ((liftMS3.liftA3.liftD3) f b' c' d')
-
 liftD3 f = lf
  where
    lf (D b0 b') (D c0 c') (D d0 d') =
-     D (f b0 c0 d0) ((liftMS3.liftA3) lf b' c' d')
+     D (f b0 c0 d0) (liftL3 lf b' c' d')
 
--- TODO: Define liftD2, liftD3 in terms of (<*>>) Compare generated code
--- for speed.
 
--- infixl 4 <*>>
--- -- | Like '(<*>)' for derivative towers.
--- (<*>>) :: (HasTrie (Basis a)) =>
---           (a :> (b -> c)) -> (a :> b) -> (a :> c)
--- D f0 f' <*>> D x0 x' = D (f0 x0) (liftA2 (<*>>) f' x')
+-- TODO: Can liftD2 and liftD3 be defined in terms of a (<*>>) similar to
+-- (<*>)?  If so, can the speed be as good?
 
 -- liftD2 f a b = (f <$>> a) <*>> b
-
+-- 
 -- liftD3 f a b c = liftD2 f a b <*>> c
 
 
@@ -197,22 +178,6 @@ distrib op = (#)
    u@(D u0 u') # v@(D v0 v') =
      D (u0 `op` v0) ( liftMS (inTrie ((# v) .)) u' ^+^
                       liftMS (inTrie ((u #) .)) v' )
-
-
--- Like 'mappend' for @Maybe (Sum a)@
-
--- infixl 6 ?+?
--- (?+?) :: AdditiveGroup a => Maybe a -> Maybe a -> Maybe a
--- a ?+? Nothing     = a
--- Nothing ?+? b     = b
--- Just a ?+? Just b = Just (a ^+^ b)
-
-
--- distrib op = (#)
---  where
---    u@(D u0 u') # v@(D v0 v') =
---      D (u0 `op` v0) ((inTrie ((# v) .) {- <$> -} u') ^+^ (inTrie ((u #) .) {- <$> -} v'))
-
 
 
 -- TODO: I think this distrib is exponential in increasing degree.  Switch
