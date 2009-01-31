@@ -13,7 +13,8 @@
 
 module Data.AdditiveGroup
   ( 
-    AdditiveGroup(..), (^-^), sumV, Sum(..)
+    AdditiveGroup(..), (^-^), sumV
+  , Sum(..), inSum, inSum2
   ) where
 
 import Control.Applicative
@@ -47,15 +48,15 @@ instance AdditiveGroup () where
   () ^+^ () = ()
   negateV   = id
 
-instance AdditiveGroup Double where
-  zeroV   = 0.0
-  (^+^)   = (+)
-  negateV = negate
+-- For 'Num' types:
+-- 
+-- instance AdditiveGroup n where {zeroV=0; (^+^) = (+); negateV = negate}
 
-instance AdditiveGroup Float where
-  zeroV   = 0.0
-  (^+^)   = (+)
-  negateV = negate
+instance AdditiveGroup Int     where {zeroV=0; (^+^) = (+); negateV = negate}
+instance AdditiveGroup Integer where {zeroV=0; (^+^) = (+); negateV = negate}
+instance AdditiveGroup Float   where {zeroV=0; (^+^) = (+); negateV = negate}
+instance AdditiveGroup Double  where {zeroV=0; (^+^) = (+); negateV = negate}
+
 
 instance (RealFloat v, AdditiveGroup v) => AdditiveGroup (Complex v) where
   zeroV   = zeroV :+ zeroV
@@ -103,17 +104,49 @@ instance (HasTrie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
 
 -- | Monoid under group addition.  Alternative to the @Sum@ in
 -- "Data.Monoid", which uses 'Num' instead of 'AdditiveGroup'.
-newtype Sum a = Sum a
+newtype Sum a = Sum { getSum :: a }
   deriving (Eq, Ord, Read, Show, Bounded)
 
 instance Functor Sum where
   fmap f (Sum a) = Sum (f a)
 
+-- instance Applicative Sum where
+--   pure a = Sum a
+--   Sum f <*> Sum x = Sum (f x)
+
 instance Applicative Sum where
-  pure a = Sum a
-  Sum f <*> Sum x = Sum (f x)
+  pure  = Sum
+  (<*>) = inSum2 ($)
 
 instance AdditiveGroup a => Monoid (Sum a) where
   mempty  = Sum zeroV
   mappend = liftA2 (^+^)
 
+
+-- | Application a unary function inside a 'Sum'
+inSum :: (a -> b) -> (Sum a -> Sum b)
+inSum = getSum ~> Sum
+
+-- | Application a binary function inside a 'Sum'
+inSum2 :: (a -> b -> c) -> (Sum a -> Sum b -> Sum c)
+inSum2 = getSum ~> inSum
+
+
+instance AdditiveGroup a => AdditiveGroup (Sum a) where
+  zeroV   = mempty
+  (^+^)   = mappend
+  negateV = inSum negateV
+
+
+---- to go elsewhere
+
+(~>) :: (a' -> a) -> (b -> b') -> ((a -> b) -> (a' -> b'))
+(i ~> o) f = o . f . i
+
+-- result :: (b -> b') -> ((a -> b) -> (a -> b'))
+-- result = (.)
+
+-- argument :: (a' -> a) -> ((a -> b) -> (a' -> b))
+-- argument = flip (.)
+
+-- g ~> f = result g . argument f

@@ -30,13 +30,15 @@
 
 module Data.Maclaurin
   (
-    (:>), powVal, derivative, derivAtBasis
+    (:>)(D), powVal, derivative, derivAtBasis  -- maybe not D
   , (:~>), pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
   , linearD, distrib
   -- , (@.)
   , (>-<)
+  -- * Misc
+  , pairD, unpairD, tripleD, untripleD
   ) 
     where
 
@@ -73,24 +75,34 @@ pureD b = b `D` zeroV
 
 infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
-fmapD, (<$>>) :: (HasTrie (Basis a)) =>
+fmapD, (<$>>) :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b) =>
                  (b -> c) -> (a :> b) -> (a :> c)
-fmapD f (D b0 b') = D (f b0) ((fmap.fmap.fmapD) f b')
+fmapD f (D b0 b') = D (f b0) ((liftMS.fmap.fmapD) f b')
+
+-- TODO: try again with liftL in place of liftMS.fmap and similarly for
+-- liftD2, liftD3
+
+
+-- f :: b -> c
+
+-- b' :: a :-* (a :> b)
+
 
 (<$>>) = fmapD
 
 -- | Apply a /linear/ binary function over derivative towers.
-liftD2 :: HasTrie (Basis a) =>
+liftD2 :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b, AdditiveGroup c) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) ((liftA2.liftA2.liftD2) f b' c')
+liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) ((liftMS2.liftA2.liftD2) f b' c')
 
 
 -- | Apply a /linear/ ternary function over derivative towers.
-liftD3 :: HasTrie (Basis a) =>
+liftD3 :: (HasBasis a, HasTrie (Basis a)
+          , AdditiveGroup b, AdditiveGroup c, AdditiveGroup d) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
 liftD3 f (D b0 b') (D c0 c') (D d0 d') =
-  D (f b0 c0 d0) ((liftA3.liftA3.liftD3) f b' c' d')
+  D (f b0 c0 d0) ((liftMS3.liftA3.liftD3) f b' c' d')
 
 -- TODO: Define liftD2, liftD3 in terms of (<*>>) Compare generated code
 -- for speed.
@@ -164,15 +176,32 @@ sndD = linearD snd
 
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
--- bilinearity.
+-- bilinearity.  Is bilinearity necessary for correctness here?
 distrib :: forall a b c u.
-           (HasBasis a, HasTrie (Basis a), AdditiveGroup u) =>
+           ( HasBasis a, HasTrie (Basis a)
+           , AdditiveGroup b, AdditiveGroup c, AdditiveGroup u) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 distrib op = (#)
  where
    u@(D u0 u') # v@(D v0 v') =
-     D (u0 `op` v0) ((inTrie ((# v) .) <$> u') ^+^ (inTrie ((u #) .) <$> v'))
+     D (u0 `op` v0) ( liftMS (inTrie ((# v) .)) u' ^+^
+                      liftMS (inTrie ((u #) .)) v' )
+
+
+-- Like 'mappend' for @Maybe (Sum a)@
+
+-- infixl 6 ?+?
+-- (?+?) :: AdditiveGroup a => Maybe a -> Maybe a -> Maybe a
+-- a ?+? Nothing     = a
+-- Nothing ?+? b     = b
+-- Just a ?+? Just b = Just (a ^+^ b)
+
+
+-- distrib op = (#)
+--  where
+--    u@(D u0 u') # v@(D v0 v') =
+--      D (u0 `op` v0) ((inTrie ((# v) .) {- <$> -} u') ^+^ (inTrie ((u #) .) {- <$> -} v'))
 
 
 
@@ -181,16 +210,23 @@ distrib op = (#)
 -- McIlroy.
 
 
-instance Show b => Show (a :> b) where show    = noOv "show"
+-- instance Show b => Show (a :> b) where show    = noOv "show"
+
+instance Show b => Show (a :> b) where
+  show (D b0 _) = "D " ++ show b0  ++ " ..."
+
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
 
 instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :> u) where
   zeroV   = pureD  zeroV    -- or dZero
   negateV = fmapD  negateV
-  (^+^)   = liftD2 (^+^)
+  D a0 a' ^+^ D b0 b' = D (a0 ^+^ b0) (a' ^+^ b')
+  -- Less efficient: adds zero
+  -- (^+^)   = liftD2 (^+^)
 
-instance (HasBasis a, HasTrie (Basis a), VectorSpace u)
+instance ( HasBasis a, HasTrie (Basis a)
+         , VectorSpace u, AdditiveGroup (Scalar u) )
       => VectorSpace (a :> u) where
   type Scalar (a :> u) = (a :> Scalar u)
   (*^) = distrib (*^)                     
@@ -212,10 +248,11 @@ instance ( InnerSpace u, s ~ Scalar u, AdditiveGroup s
 infix  0 >-<
 
 -- | Specialized chain rule.  See also '(\@.)'
-(>-<) :: (HasBasis a, HasTrie (Basis a), VectorSpace u) =>
+(>-<) :: ( HasBasis a, HasTrie (Basis a), VectorSpace u
+         , AdditiveGroup (Scalar u)) =>
          (u -> u) -> ((a :> u) -> (a :> Scalar u))
       -> (a :> u) -> (a :> u)
-f >-< f' = \ u@(D u0 u') -> D (f u0) (f' u *^ u')
+f >-< f' = \ u@(D u0 u') -> D (f u0) (liftMS (f' u *^) u')
 
 
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
@@ -225,9 +262,8 @@ instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
          )
       => Num (a:>s) where
   fromInteger = pureD . fromInteger
-  (+) = liftD2  (+)
-  (-) = liftD2  (-)
-  (*) = distrib (*)
+  (+)    = (^+^)
+  (*)    = distrib (*)
   negate = negate >-< -1
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
@@ -265,3 +301,35 @@ instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
 derivAtBasis :: (HasTrie (Basis a), HasBasis a, AdditiveGroup b) =>
                 (a :> b) -> (Basis a -> (a :> b))
 derivAtBasis f = atBasis (derivative f)
+
+
+---- Misc
+
+pairD :: ( HasBasis a, HasTrie (Basis a)
+         , VectorSpace b, VectorSpace c
+         , Scalar b ~ Scalar c
+         ) => (a:>b,a:>c) -> a:>(b,c)
+
+pairD (u,v) = liftD2 (,) u v
+
+unpairD :: ( HasBasis a, HasTrie (Basis a)
+           , VectorSpace a, VectorSpace b, VectorSpace c
+           , Scalar b ~ Scalar c
+           ) => (a :> (b,c)) -> (a:>b, a:>c)
+unpairD d = (fst <$>> d, snd <$>> d)
+
+
+tripleD :: ( HasBasis a, HasTrie (Basis a)
+           , VectorSpace b, VectorSpace c, VectorSpace d
+           , Scalar b ~ Scalar c, Scalar c ~ Scalar d
+           ) => (a:>b,a:>c,a:>d) -> a:>(b,c,d)
+tripleD (u,v,w) = liftD3 (,,) u v w
+
+untripleD :: ( HasBasis a, HasTrie (Basis a)
+             , VectorSpace a, VectorSpace b, VectorSpace c, VectorSpace d
+             , Scalar b ~ Scalar c, Scalar c ~ Scalar d
+             ) =>
+             (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
+untripleD d =
+  ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)
+

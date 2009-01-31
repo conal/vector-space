@@ -106,32 +106,3 @@ instance ( Num s, VectorSpace s, HasBasis s, HasTrie (Basis s)
          , HasNormal (Two s :> Three s))
          => HasNormal (Three (Two s :> s)) where
   normalVec = untripleD . normalVec . tripleD
-
-
----- Could go elsewhere
-
-pairD :: ( HasBasis a, HasTrie (Basis a)
-         , VectorSpace b, VectorSpace c
-         , Scalar b ~ Scalar c
-         ) => (a:>b,a:>c) -> a:>(b,c)
-pairD (u,v) = liftD2 (,) u v
-
-tripleD :: ( HasBasis a, HasTrie (Basis a)
-           , VectorSpace b, VectorSpace c, VectorSpace d
-           , Scalar b ~ Scalar c, Scalar c ~ Scalar d
-           ) => (a:>b,a:>c,a:>d) -> a:>(b,c,d)
-tripleD (u,v,w) = liftD3 (,,) u v w
-
-unpairD :: ( HasBasis a, HasTrie (Basis a)
-           , VectorSpace a, VectorSpace b, VectorSpace c
-           , Scalar b ~ Scalar c
-           ) => (a :> (b,c)) -> (a:>b, a:>c)
-unpairD d = (fst <$>> d, snd <$>> d)
-
-untripleD :: ( HasBasis a, HasTrie (Basis a)
-             , VectorSpace a, VectorSpace b, VectorSpace c, VectorSpace d
-             , Scalar b ~ Scalar c, Scalar c ~ Scalar d
-             ) =>
-             (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
-untripleD d =
-  ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)
