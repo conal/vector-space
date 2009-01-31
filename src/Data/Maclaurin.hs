@@ -30,7 +30,7 @@
 
 module Data.Maclaurin
   (
-    (:>), powVal, derivative
+    (:>), powVal, derivative, derivAtBasis
   , (:~>), pureD
   , fmapD, (<$>>){-, (<*>>)-}, liftD2, liftD3
   , idD, fstD, sndD
@@ -75,21 +75,22 @@ infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
 fmapD, (<$>>) :: (HasTrie (Basis a)) =>
                  (b -> c) -> (a :> b) -> (a :> c)
-fmapD f (D b0 b') = D (f b0) ((fmap.fmapD) f b')
+fmapD f (D b0 b') = D (f b0) ((fmap.fmap.fmapD) f b')
 
 (<$>>) = fmapD
 
 -- | Apply a /linear/ binary function over derivative towers.
 liftD2 :: HasTrie (Basis a) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
-liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) (liftA2 (liftD2 f) b' c')
+liftD2 f (D b0 b') (D c0 c') = D (f b0 c0) ((liftA2.liftA2.liftD2) f b' c')
 
 
 -- | Apply a /linear/ ternary function over derivative towers.
 liftD3 :: HasTrie (Basis a) =>
           (b -> c -> d -> e)
        -> (a :> b) -> (a :> c) -> (a :> d) -> (a :> e)
-liftD3 f (D b0 b') (D c0 c') (D d0 d') = D (f b0 c0 d0) (liftA3 (liftD3 f) b' c' d')
+liftD3 f (D b0 b') (D c0 c') (D d0 d') =
+  D (f b0 c0 d0) ((liftA3.liftA3.liftD3) f b' c' d')
 
 -- TODO: Define liftD2, liftD3 in terms of (<*>>) Compare generated code
 -- for speed.
@@ -168,20 +169,11 @@ distrib :: forall a b c u.
            (HasBasis a, HasTrie (Basis a), AdditiveGroup u) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
--- distrib op u@(D u0 u') v@(D v0 v') =
---   D (u0 `op` v0) (trie (\ e -> distrib op u (v' `untrie` e) ^+^
---                                distrib op (u' `untrie` e) v))
-
-distrib op u@(D u0 u') v@(D v0 v') = D (u0 `op` v0) (inTrie2 comb u' v')
+distrib op = (#)
  where
-   -- comb :: (Basis a -> a :> b) -> (Basis a -> a :> c) -> (Basis a -> a :> u)
-   comb uf vf (e :: Basis a) =
-     distrib op u (vf e) ^+^ distrib op (uf e) v
+   u@(D u0 u') # v@(D v0 v') =
+     D (u0 `op` v0) ((inTrie ((# v) .) <$> u') ^+^ (inTrie ((u #) .) <$> v'))
 
---   comb uf vf = distrib op u . vf ^+^ flip (distrib op) v . uf
-
--- TODO: Look for a formulation of distrib that eliminates the explicit
--- conversion between functions and tries.  Maybe something with trie addition.
 
 
 -- TODO: I think this distrib is exponential in increasing degree.  Switch
@@ -266,3 +258,10 @@ instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
   asinh = asinh >-< recip (sqrt (1+sqr))
   acosh = acosh >-< recip (- sqrt (sqr-1))
   atanh = atanh >-< recip (1-sqr)
+
+
+-- | Sample the derivative at a basis element.  Optimized for partial
+-- application to save work for non-scalar derivatives.
+derivAtBasis :: (HasTrie (Basis a), HasBasis a, AdditiveGroup b) =>
+                (a :> b) -> (Basis a -> (a :> b))
+derivAtBasis f = atBasis (derivative f)

@@ -25,9 +25,7 @@ import Data.VectorSpace
 import Data.MemoTrie
 import Data.Basis
 
--- import Data.LinearMap
 import Data.Derivative
--- import Data.Maclaurin
 
 -- | Thing with a normal vector (not necessarily normalized).
 class HasNormal v where normalVec :: v -> v
@@ -58,7 +56,23 @@ instance ( HasBasis a, HasTrie (Basis a)
 
 instance (HasBasis s, HasTrie (Basis s), Basis s ~ ()) =>
          HasNormal (One s :> Two s) where
-  normalVec v = cross2 (derivative v `untrie` ())
+  normalVec v = cross2 (v `derivAtBasis` ())
+
+-- When I use atBasis (from LinearMap) instead of the more liberally-typed
+-- atB (below), I get a type error:
+-- 
+--     Couldn't match expected type `Basis a1' against inferred type `()'
+--       Expected type: a1 :-* (s :> Two s)
+--       Inferred type: s  :-* (s :> Two s)
+--     In the first argument of `atB', namely `derivative v'
+-- 
+-- I think this type error is a GHC bug, but I'm not sure.
+
+-- atB :: (AdditiveGroup b, HasTrie a) => Maybe (a :->: b) -> a -> b
+-- -- atB :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) =>
+-- --        Maybe (Basis a :->: b) -> Basis a -> b
+-- l `atB` b = maybe zeroV (`untrie` b) l
+
 
 instance ( Num s, VectorSpace s
          , HasBasis s, HasTrie (Basis s), Basis s ~ ())
@@ -86,7 +100,7 @@ instance (Num s, HasTrie (Basis (s, s)), HasBasis s, Basis s ~ ()) =>
          HasNormal (Two s :> Three s) where
   normalVec v = d (Left ()) `cross3` d (Right ())
    where
-     d = untrie (derivative v)
+     d = derivAtBasis v
 
 instance ( Num s, VectorSpace s, HasBasis s, HasTrie (Basis s)
          , HasNormal (Two s :> Three s))
