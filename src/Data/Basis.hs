@@ -27,6 +27,9 @@ import Data.Either
 
 import Data.VectorSpace
 
+-- using associated data type instead of associated type synonym to work
+-- around ghc bug <http://hackage.haskell.org/trac/ghc/ticket/3038>
+
 class VectorSpace v => HasBasis v where
   -- | Representation of the canonical basis for @v@
   type Basis v :: *

@@ -37,12 +37,11 @@ import Data.MemoTrie
 
 infixr 7 *^
 
--- | Vector space @v@ over a scalar field @s@.  Extends 'AdditiveGroup'
--- with scalar multiplication.
+-- | Vector space @v@.
 class AdditiveGroup v => VectorSpace v where
   type Scalar v :: *
   -- | Scale a vector
-  (*^)  :: Scalar v -> v -> v
+  (*^) :: Scalar v -> v -> v
 
 infixr 7 <.>
 

@@ -95,7 +95,8 @@ infixr 9 *.*
 -- | Compose linear maps
 (*.*) :: ( HasBasis u, HasTrie (Basis u)
          , HasBasis v, HasTrie (Basis v)
-         , VectorSpace w, Scalar v ~ Scalar w ) =>
+         , VectorSpace w
+         , Scalar v ~ Scalar w ) =>
          (v :-* w) -> (u :-* v) -> (u :-* w)
 
 -- Simple definition, but only optimizes out uv == zero
@@ -111,6 +112,7 @@ infixr 9 *.*
 
 -- (*.*) = liftA2 (\ (Sum vw) (Sum uv) -> Sum (lapply' vw <$> uv))
 
+-- (*.*) = (liftA2.inSum2) (\ vw uv -> lapply' vw <$> uv)
 (*.*) = (liftA2.inSum2) (\ vw uv -> lapply' vw <$> uv)
 
 -- (*.*) = (liftA2.inSum2) (\ vw -> fmap (lapply' vw))
