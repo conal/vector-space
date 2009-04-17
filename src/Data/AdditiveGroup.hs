@@ -78,6 +78,12 @@ instance (AdditiveGroup u,AdditiveGroup v,AdditiveGroup w)
   (u,v,w) ^+^ (u',v',w') = (u^+^u',v^+^v',w^+^w')
   negateV (u,v,w)        = (negateV u,negateV v,negateV w)
 
+instance (AdditiveGroup u,AdditiveGroup v,AdditiveGroup w,AdditiveGroup x)
+    => AdditiveGroup (u,v,w,x) where
+  zeroV                       = (zeroV,zeroV,zeroV,zeroV)
+  (u,v,w,x) ^+^ (u',v',w',x') = (u^+^u',v^+^v',w^+^w',x^+^x')
+  negateV (u,v,w,x)           = (negateV u,negateV v,negateV w,negateV x)
+
 
 -- Standard instance for an applicative functor applied to a vector space.
 instance AdditiveGroup v => AdditiveGroup (a -> v) where

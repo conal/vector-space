@@ -134,6 +134,22 @@ instance ( InnerSpace u, s ~ Scalar u
     => InnerSpace (u,v,w) where
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
+instance ( VectorSpace u, s ~ Scalar u
+         , VectorSpace v, s ~ Scalar v
+         , VectorSpace w, s ~ Scalar w
+         , VectorSpace x, s ~ Scalar x )
+    => VectorSpace (u,v,w,x) where
+  type Scalar (u,v,w,x) = Scalar u
+  s *^ (u,v,w,x) = (s*^u,s*^v,s*^w,s*^x)
+
+instance ( InnerSpace u, s ~ Scalar u
+         , InnerSpace v, s ~ Scalar v
+         , InnerSpace w, s ~ Scalar w
+         , InnerSpace x, s ~ Scalar x
+         , AdditiveGroup s )
+    => InnerSpace (u,v,w,x) where
+  (u,v,w,x) <.> (u',v',w',x') = u<.>u' ^+^ v<.>v' ^+^ w<.>w' ^+^ x<.>x'
+
 
 -- Standard instances for a functor applied to a vector space.
 

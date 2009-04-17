@@ -53,6 +53,13 @@ type u :-* v = MSum (Basis u :->: v)
 -- which uses in @IntMap@.
 
 
+-- PROBLEM: u :-* v is a type synonym, and Basis is an associated type synonym, resulting in a subtle
+-- ambiguity: u:-*v == u':-*v' does not imply that u==u', since Basis
+-- might map different types to the same basis (e.g., Float & Double).
+-- See <http://hackage.haskell.org/trac/ghc/ticket/1897>
+-- 
+-- Work in progress.  See NewLinearMap.hs
+
 
 -- | Function (assumed linear) as linear map.
 linear :: (HasBasis u, HasTrie (Basis u)) =>
@@ -90,6 +97,7 @@ lapply' tr = linearCombo . fmap (first (untrie tr)) . decompose
 idL :: (HasBasis u, HasTrie (Basis u)) => 
        u :-* u
 idL = linear id
+
 
 infixr 9 *.*
 -- | Compose linear maps
