@@ -30,6 +30,7 @@ module Data.VectorSpace
   , lerp, magnitudeSq, magnitude, normalized
   ) where
 
+import Control.Applicative (liftA2)
 import Data.Complex hiding (magnitude)
 
 import Data.AdditiveGroup
@@ -160,16 +161,28 @@ instance VectorSpace v => VectorSpace (Maybe v) where
   type Scalar (Maybe v) = Scalar v
   (*^) s = fmap (s *^)
 
-instance VectorSpace v => VectorSpace (a -> v) where
-  type Scalar (a -> v) = Scalar v
-  (*^) s = fmap (s *^)
+-- instance VectorSpace v => VectorSpace (a -> v) where
+--   type Scalar (a -> v) = Scalar v
+--   (*^) s = fmap (s *^)
 
-instance (HasTrie a, VectorSpace v)
-         => VectorSpace (a :->: v) where
+-- No 'InnerSpace' instance for @a -> v@.
+
+-- Or the following definition, which is useful for the higher-order
+-- shading dsel in Shady (borrowed from Vertigo).
+
+instance VectorSpace v => VectorSpace (a -> v) where
+  type Scalar (a -> v) = a -> Scalar v
+  (*^) = liftA2 (*^)
+
+instance InnerSpace v => InnerSpace (a -> v) where
+  (<.>) = liftA2 (<.>)
+
+
+
+instance (HasTrie a, VectorSpace v) => VectorSpace (a :->: v) where
   type Scalar (a :->: v) = Scalar v
   (*^) s = fmap (s *^)
 
--- No 'InnerSpace' instance for @a -> v@.
 
 
 instance (InnerSpace a, AdditiveGroup (Scalar a)) => InnerSpace (Maybe a) where
