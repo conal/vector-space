@@ -42,6 +42,8 @@ module Data.Maclaurin
   ) 
     where
 
+-- import Control.Applicative (liftA2)
+import Data.Function (on)
 
 import Data.VectorSpace
 import Data.NumInstances ()
@@ -49,6 +51,7 @@ import Data.MemoTrie
 import Data.Basis
 import Data.LinearMap
 
+import Data.Boolean
 
 infixr 9 `D`
 -- | Tower of derivatives.
@@ -61,15 +64,9 @@ type a :~> b = a -> (a:>b)
 noOv :: String -> a
 noOv op = error (op ++ ": not defined on a :> b")
 
--- -- | Derivative tower full of 'zeroV'.
--- dZero :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => a:>b
--- dZero = pureD zeroV
-
 -- | Constant derivative tower.
 pureD :: (AdditiveGroup b, HasBasis a, HasTrie (Basis a)) => b -> a:>b
 pureD b = b `D` zeroV
-
--- pureD b = b `D` pure dZero
 
 
 infixl 4 <$>>
@@ -191,10 +188,23 @@ instance Show b => Show (a :> b) where
   show (D b0 _) = "D " ++ show b0  ++ " ..."
 
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
-instance Ord  b => Ord  (a :> b) where compare = noOv "compare"
+
+instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
+         , OrdB bool b, IfB bool b, Ord  b) => Ord  (a :> b) where
+  compare = compare `on` powVal
+  min     = minB
+  max     = maxB
+
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB b v) =>
+      IfB b (u :> v) where
+  ifB = liftD2 . ifB
+
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB b v) =>
+         OrdB b (u :> v) where
+  (<*) = (<*) `on` powVal
 
 instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :> u) where
-  zeroV   = pureD  zeroV    -- or dZero
+  zeroV   = pureD  zeroV
   negateV = fmapD  negateV
   D a0 a' ^+^ D b0 b' = D (a0 ^+^ b0) (a' ^+^ b')
   -- Less efficient: adds zero
