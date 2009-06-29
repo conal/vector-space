@@ -195,6 +195,9 @@ instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
   min     = minB
   max     = maxB
 
+-- minB & maxB use ifB, and so can work even if b is an expression type,
+-- as in deep DSELs.
+
 instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB b v) =>
       IfB b (u :> v) where
   ifB = liftD2 . ifB
