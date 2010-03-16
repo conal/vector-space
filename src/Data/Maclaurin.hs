@@ -189,6 +189,14 @@ instance Show b => Show (a :> b) where
 
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB b v) =>
+      IfB b (u :> v) where
+  ifB = liftD2 . ifB
+
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB b v) =>
+         OrdB b (u :> v) where
+  (<*) = (<*) `on` powVal
+
 instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
          , OrdB bool b, IfB bool b, Ord  b) => Ord  (a :> b) where
   compare = compare `on` powVal
@@ -197,14 +205,6 @@ instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
 
 -- minB & maxB use ifB, and so can work even if b is an expression type,
 -- as in deep DSELs.
-
-instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB b v) =>
-      IfB b (u :> v) where
-  ifB = liftD2 . ifB
-
-instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB b v) =>
-         OrdB b (u :> v) where
-  (<*) = (<*) `on` powVal
 
 instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :> u) where
   zeroV   = pureD  zeroV
@@ -260,7 +260,7 @@ instance ( HasBasis a, s ~ Scalar a, HasTrie (Basis a)
          , Fractional s, VectorSpace s, Scalar s ~ s)
          => Fractional (a:>s) where
   fromRational = pureD . fromRational
-  recip        = recip >-< recip sqr
+  recip        = recip >-< - recip sqr
 
 sqr :: Num a => a -> a
 sqr x = x*x
