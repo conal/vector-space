@@ -23,7 +23,7 @@ module Data.Basis (HasBasis(..), linearCombo, recompose) where
 
 -- import Control.Applicative ((<$>))
 import Control.Arrow (first)
-import Data.Either
+-- import Data.Either
 
 import Data.VectorSpace
 
