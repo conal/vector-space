@@ -75,7 +75,7 @@ fmapD, (<$>>) :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b) =>
                  (b -> c) -> (a :> b) -> (a :> c)
 fmapD f = lf
  where
-   lf (D b0 b') = D (f b0) (liftL lf b')
+   lf (D b0 b') = D (f b0) ((inLMap.liftL) lf b')
 
 (<$>>) = fmapD
 
@@ -84,7 +84,7 @@ liftD2 :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b, AdditiveGroup c) =>
           (b -> c -> d) -> (a :> b) -> (a :> c) -> (a :> d)
 liftD2 f = lf
  where
-   lf (D b0 b') (D c0 c') = D (f b0 c0) (liftL2 lf b' c')
+   lf (D b0 b') (D c0 c') = D (f b0 c0) ((inLMap2.liftL2) lf b' c')
 
 
 -- | Apply a /linear/ ternary function over derivative towers.
@@ -95,7 +95,7 @@ liftD3 :: (HasBasis a, HasTrie (Basis a)
 liftD3 f = lf
  where
    lf (D b0 b') (D c0 c') (D d0 d') =
-     D (f b0 c0 d0) (liftL3 lf b' c' d')
+     D (f b0 c0 d0) ((inLMap3.liftL3) lf b' c' d')
 
 
 -- TODO: Can liftD2 and liftD3 be defined in terms of a (<*>>) similar to
@@ -173,8 +173,8 @@ distrib :: forall a b c u.
 distrib op = (#)
  where
    u@(D u0 u') # v@(D v0 v') =
-     D (u0 `op` v0) ( liftMS (inTrie ((# v) .)) u' ^+^
-                      liftMS (inTrie ((u #) .)) v' )
+     D (u0 `op` v0) ( (inLMap.liftMS) (inTrie ((# v) .)) u' ^+^
+                      (inLMap.liftMS) (inTrie ((u #) .)) v' )
 
 
 -- TODO: I think this distrib is exponential in increasing degree.  Switch
@@ -240,7 +240,7 @@ infix  0 >-<
          , AdditiveGroup (Scalar u)) =>
          (u -> u) -> ((a :> u) -> (a :> Scalar u))
       -> (a :> u) -> (a :> u)
-f >-< f' = \ u@(D u0 u') -> D (f u0) (liftMS (f' u *^) u')
+f >-< f' = \ u@(D u0 u') -> D (f u0) ((inLMap.liftMS) (f' u *^) u')
 
 
 -- TODO: express '(>-<)' in terms of '(@.)'.  If I can't, then understand why not.
