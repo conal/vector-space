@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.7.1
+Version:             0.7.2
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9 or better)
 Category:            math
@@ -22,6 +22,7 @@ Homepage:            http://haskell.org/haskellwiki/vector-space
 Package-Url:         http://code.haskell.org/vector-space
 Copyright:           (c) 2008-2010 by Conal Elliott
 License:             BSD3
+License-File:        COPYING
 Stability:           experimental
 build-type:          Simple
 
