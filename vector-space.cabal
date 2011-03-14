@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.7.2
+Version:             0.7.3
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9 or better)
 Category:            math

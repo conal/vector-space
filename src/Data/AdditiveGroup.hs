@@ -17,8 +17,11 @@ module Data.AdditiveGroup
   , Sum(..), inSum, inSum2
   ) where
 
+import Prelude hiding (foldr)
+
 import Control.Applicative
 import Data.Monoid (Monoid(..))
+import Data.Foldable (Foldable,foldr)
 import Data.Complex hiding (magnitude)
 
 import Data.MemoTrie
@@ -39,9 +42,8 @@ class AdditiveGroup v where
 v ^-^ v' = v ^+^ negateV v'
 
 -- | Sum over several vectors
-sumV :: AdditiveGroup v => [v] -> v
+sumV :: (Foldable f, AdditiveGroup v) => f v -> v
 sumV = foldr (^+^) zeroV
-
 
 instance AdditiveGroup () where
   zeroV     = ()
