@@ -47,6 +47,19 @@ newtype u :-* v = LMap { unLMap :: LMap' u v }
 
 deriving instance (HasTrie (Basis u), AdditiveGroup v) => AdditiveGroup (u :-* v)
 
+instance (HasTrie (Basis u), VectorSpace v) =>
+         VectorSpace (u :-* v) where
+  type Scalar (u :-* v) = Scalar v
+  (*^) s = (inLMap.liftMS.fmap) (s *^)
+
+-- liftMS :: (AdditiveGroup a) => (a -> b) -> (MSum a -> MSum b)
+
+-- (s *^) :: v -> v
+-- fmap (s *^) :: (Basis u :->: v) -> (Basis u :->: v)
+-- (liftMS.fmap) (s *^) :: LMap' u v -> LMap' u v
+-- (inLMap.liftMS.fmap) (s *^) :: (u :-* v) -> (u :-* v)
+
+
 -- Before version 0.7, u :-* v was a type synonym, resulting in a subtle
 -- ambiguity: u:-*v == u':-*v' does not imply that u==u', since Basis
 -- might map different types to the same basis (e.g., Float & Double).
