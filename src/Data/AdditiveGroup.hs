@@ -102,6 +102,36 @@ instance AdditiveGroup a => AdditiveGroup (Maybe a) where
   Just a' ^+^ Just b' = Just (a' ^+^ b')
   negateV = fmap negateV
 
+{-
+
+Alexey Khudyakov wrote:
+
+  I looked through vector-space package and found lawless instance. Namely Maybe's AdditiveGroup instance
+
+  It's group so following relation is expected to hold. Otherwise it's not a group.
+  > x ^+^ negateV x == zeroV
+
+  Here is counterexample:
+
+  > let x = Just 2 in x ^+^ negateV x == zeroV
+  False
+
+  I think it's not possible to sensibly define group instance for
+  Maybe a at all.
+
+
+I see that the problem here is in distinguishing 'Just zeroV' from
+Nothing. I could fix the Just + Just line to use Nothing instead of Just
+zeroV when a' ^+^ b' == zeroV, although doing so would require Eq a and
+hence lose some generality. Even so, the abstraction leak would probably
+show up elsewhere.
+
+Hm.
+
+-}
+
+
+
 
 -- Memo tries
 instance (HasTrie u, AdditiveGroup v) => AdditiveGroup (u :->: v) where
