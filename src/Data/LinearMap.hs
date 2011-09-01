@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators, FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
--- {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
@@ -17,6 +17,7 @@ module Data.LinearMap
    , inLMap, inLMap2, inLMap3
    , liftMS, liftMS2, liftMS3
    , liftL, liftL2, liftL3
+   , firstL
    )
   where
 
@@ -51,6 +52,15 @@ instance (HasTrie (Basis u), VectorSpace v) =>
          VectorSpace (u :-* v) where
   type Scalar (u :-* v) = Scalar v
   (*^) s = (inLMap.liftMS.fmap) (s *^)
+
+firstL :: ( HasBasis u, HasBasis u', HasBasis v
+          , HasTrie (Basis u), HasTrie (Basis v) 
+          , Scalar u ~ Scalar v, Scalar u ~ Scalar u'
+          ) =>
+          (u :-* u') -> ((u,v) :-* (u',v))
+firstL = linear.first.lapply
+
+-- TODO: more efficient firstL
 
 -- liftMS :: (AdditiveGroup a) => (a -> b) -> (MSum a -> MSum b)
 
