@@ -27,7 +27,7 @@ module Data.VectorSpace
   ( module Data.AdditiveGroup
   , VectorSpace(..), (^/), (^*)
   , InnerSpace(..)
-  , lerp, magnitudeSq, magnitude, normalized
+  , lerp, magnitudeSq, magnitude, normalized, project
   ) where
 
 import Control.Applicative (liftA2)
@@ -81,6 +81,11 @@ magnitude = sqrt . magnitudeSq
 -- given the zero vector, then return it.
 normalized :: (InnerSpace v, s ~ Scalar v, Floating s) =>  v -> v
 normalized v = v ^/ magnitude v
+
+-- | @project u v@ computes the projection of @v@ onto @u@.
+project :: (InnerSpace v, s ~ Scalar v, Floating s) => v -> v -> v
+project u v = (v <.> u') *^ u'
+  where u' = normalized u
 
 instance VectorSpace Double where
   type Scalar Double = Double
