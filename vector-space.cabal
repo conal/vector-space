@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.7.6
+Version:             0.7.7
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9 or better)
 Category:            math
@@ -29,7 +29,8 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base<5, MemoTrie >= 0.4.2, Boolean >= 0.0.1
+  Build-Depends:       base<5, MemoTrie >= 0.4.2, Boolean >= 0.0.1,
+                       NumInstances >= 1.0
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace
@@ -40,7 +41,7 @@ Library
                      Data.Derivative
                      Data.Cross
                      Data.AffineSpace
-                     Data.NumInstances
+--                   Data.NumInstances
 
 
   -- This library relies on type families working as well as in 6.10.
