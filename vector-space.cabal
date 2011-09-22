@@ -1,7 +1,7 @@
 Name:                vector-space
-Version:             0.7.7
+Version:             0.7.8
 Cabal-Version:       >= 1.2
-Synopsis:            Vector & affine spaces, linear maps, and derivatives (requires ghc 6.9 or better)
+Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
 Description:
   /vector-space/ provides classes and generic operations for vector
@@ -15,7 +15,7 @@ Description:
   .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
   .
-  &#169; 2008-2010 by Conal Elliott; BSD3 license.
+  &#169; 2008-2011 by Conal Elliott; BSD3 license.
 Author:              Conal Elliott 
 Maintainer:          conal@conal.net
 Homepage:            http://haskell.org/haskellwiki/vector-space
@@ -41,7 +41,6 @@ Library
                      Data.Derivative
                      Data.Cross
                      Data.AffineSpace
---                   Data.NumInstances
 
 
   -- This library relies on type families working as well as in 6.10.
@@ -49,6 +48,6 @@ Library
     buildable: False
   }
   ghc-options:         -Wall -O2
-  ghc-prof-options:    -prof -auto-all 
+--  ghc-prof-options:    -prof -auto-all 
 
 -- For ghc-options: -ddump-simpl-stats -ddump-rules -ddump-simpl -ddump-simpl-phases
