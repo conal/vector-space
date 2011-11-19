@@ -32,6 +32,7 @@ module Data.VectorSpace
 
 import Control.Applicative (liftA2)
 import Data.Complex hiding (magnitude)
+import Data.Ratio
 
 import Data.AdditiveGroup
 import Data.MemoTrie
@@ -96,6 +97,11 @@ instance VectorSpace Float  where
   type Scalar Float = Float
   (*^)  = (*)
 instance InnerSpace  Float  where (<.>) = (*)
+
+instance Integral a => VectorSpace (Ratio a) where
+  type Scalar (Ratio a) = Ratio a
+  (*^) = (*)
+instance Integral a => InnerSpace  (Ratio a) where (<.>) = (*)
 
 instance (RealFloat v, VectorSpace v) => VectorSpace (Complex v) where
   type Scalar (Complex v) = Scalar v

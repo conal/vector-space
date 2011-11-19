@@ -23,6 +23,7 @@ import Control.Applicative
 import Data.Monoid (Monoid(..))
 import Data.Foldable (Foldable,foldr)
 import Data.Complex hiding (magnitude)
+import Data.Ratio
 
 import Data.MemoTrie
 
@@ -58,7 +59,8 @@ instance AdditiveGroup Int     where {zeroV=0; (^+^) = (+); negateV = negate}
 instance AdditiveGroup Integer where {zeroV=0; (^+^) = (+); negateV = negate}
 instance AdditiveGroup Float   where {zeroV=0; (^+^) = (+); negateV = negate}
 instance AdditiveGroup Double  where {zeroV=0; (^+^) = (+); negateV = negate}
-
+instance Integral a => AdditiveGroup (Ratio a) where
+  {zeroV=0; (^+^) = (+); negateV = negate}
 
 instance (RealFloat v, AdditiveGroup v) => AdditiveGroup (Complex v) where
   zeroV   = zeroV :+ zeroV

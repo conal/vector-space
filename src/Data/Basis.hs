@@ -23,6 +23,7 @@ module Data.Basis (HasBasis(..), linearCombo, recompose) where
 
 -- import Control.Applicative ((<$>))
 import Control.Arrow (first)
+import Data.Ratio
 -- import Data.Either
 
 import Data.VectorSpace
@@ -72,6 +73,12 @@ instance HasBasis Double where
   basisValue ()     = 1
   decompose s       = [((),s)]
   decompose' s      = const s
+
+instance Integral a => HasBasis (Ratio a) where
+  type Basis (Ratio a) = ()
+  basisValue ()        = 1
+  decompose s          = [((),s)]
+  decompose' s         = const s
 
 instance ( HasBasis u, s ~ Scalar u
          , HasBasis v, s ~ Scalar v )

@@ -17,6 +17,7 @@ module Data.AffineSpace
   ) where
 
 import Control.Applicative (liftA2)
+import Data.Ratio
 
 import Data.VectorSpace
 
@@ -65,6 +66,10 @@ instance  AffineSpace Float where
   (.-.) =  (-)
   (.+^) =  (+)
 
+instance Integral a => AffineSpace (Ratio a) where
+  type Diff (Ratio a) = Ratio a
+  (.-.) = (-)
+  (.+^) = (+)
 
 instance (AffineSpace p, AffineSpace q) => AffineSpace (p,q) where
   type Diff (p,q)   = (Diff p, Diff q)
