@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.8.0
+Version:             0.8.1
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
@@ -15,12 +15,12 @@ Description:
   .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
   .
-  &#169; 2008-2011 by Conal Elliott; BSD3 license.
+  &#169; 2008-2012 by Conal Elliott; BSD3 license.
 Author:              Conal Elliott 
 Maintainer:          conal@conal.net
 Homepage:            http://haskell.org/haskellwiki/vector-space
 Package-Url:         http://code.haskell.org/vector-space
-Copyright:           (c) 2008-2011 by Conal Elliott
+Copyright:           (c) 2008-2012 by Conal Elliott
 License:             BSD3
 License-File:        COPYING
 Stability:           experimental
@@ -29,7 +29,7 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base<5, MemoTrie >= 0.4.2, Boolean >= 0.0.1,
+  Build-Depends:       base<5, MemoTrie >= 0.5, Boolean >= 0.0.1,
                        NumInstances >= 1.0
   Exposed-Modules:     
                      Data.AdditiveGroup

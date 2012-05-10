@@ -3,7 +3,7 @@
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
--- Copyright   :  (c) Conal Elliott 2008
+-- Copyright   :  (c) Conal Elliott 2008-2012
 -- License     :  BSD3
 --
 -- Maintainer  :  conal@conal.net
@@ -24,11 +24,10 @@ module Data.LinearMap
 import Control.Applicative (Applicative,liftA2,liftA3)
 import Control.Arrow       (first)
 
-import Data.MemoTrie      ((:->:)(..))
+import Data.MemoTrie      (HasTrie(..),(:->:))
 import Data.AdditiveGroup (Sum(..), AdditiveGroup(..))
 import Data.VectorSpace   (VectorSpace(..))
 import Data.Basis         (HasBasis(..), linearCombo)
-
 
 -- Linear maps are almost but not quite a Control.Category.  The type
 -- class constraints interfere.  They're almost an Arrow also, but for the
