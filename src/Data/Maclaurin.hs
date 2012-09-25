@@ -189,16 +189,18 @@ instance Show b => Show (a :> b) where
 
 instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
 
-instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB b v) =>
-      IfB b (u :> v) where
+type instance BooleanOf (a :> b) = BooleanOf b
+
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB v) =>
+      IfB (u :> v) where
   ifB = liftD2 . ifB
 
-instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB b v) =>
-         OrdB b (u :> v) where
+instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB v) =>
+         OrdB (u :> v) where
   (<*) = (<*) `on` powVal
 
 instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
-         , OrdB bool b, IfB bool b, Ord  b) => Ord  (a :> b) where
+         , OrdB b, IfB b, Ord  b) => Ord  (a :> b) where
   compare = compare `on` powVal
   min     = minB
   max     = maxB

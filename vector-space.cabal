@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.8.2
+Version:             0.8.3
 Cabal-Version:       >= 1.2
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
@@ -30,8 +30,7 @@ Library
   hs-Source-Dirs:      src
   Extensions:          
   Build-Depends:       base<5, MemoTrie >= 0.5,
-                       boolean-fd,
-                       -- Boolean >= 0.1.0,
+                       Boolean >= 0.1.0,
                        NumInstances >= 1.0
   Exposed-Modules:     
                      Data.AdditiveGroup
