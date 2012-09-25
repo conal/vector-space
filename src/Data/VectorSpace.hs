@@ -85,7 +85,7 @@ normalized v = v ^/ magnitude v
 
 -- | @project u v@ computes the projection of @v@ onto @u@.
 project :: (InnerSpace v, s ~ Scalar v, Fractional s) => v -> v -> v
-project u v = ((v <.> u) *^ u) ^/ magnitudeSq u
+project u v = ((v <.> u) / magnitudeSq u) *^ u
 
 instance VectorSpace Double where
   type Scalar Double = Double
