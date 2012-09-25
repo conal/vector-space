@@ -29,7 +29,9 @@ build-type:          Simple
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base<5, MemoTrie >= 0.5, Boolean >= 0.0.1,
+  Build-Depends:       base<5, MemoTrie >= 0.5,
+                       boolean-fd,
+                       -- Boolean >= 0.1.0,
                        NumInstances >= 1.0
   Exposed-Modules:     
                      Data.AdditiveGroup
