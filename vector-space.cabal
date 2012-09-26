@@ -31,9 +31,9 @@ source-repository head
 Library
   hs-Source-Dirs:      src
   Extensions:          
-  Build-Depends:       base<5, MemoTrie >= 0.5,
-                       Boolean >= 0.1.0,
-                       NumInstances >= 1.0
+  Build-Depends:       base<5, MemoTrie >= 0.5
+                     , Boolean >= 0.1.0
+                     , NumInstances >= 1.0
   Exposed-Modules:     
                      Data.AdditiveGroup
                      Data.VectorSpace
