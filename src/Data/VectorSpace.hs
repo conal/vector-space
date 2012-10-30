@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeOperators
-           , TypeFamilies, UndecidableInstances
+           , TypeFamilies, UndecidableInstances, CPP
  #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
@@ -87,15 +87,16 @@ normalized v = v ^/ magnitude v
 project :: (InnerSpace v, s ~ Scalar v, Fractional s) => v -> v -> v
 project u v = ((v <.> u) / magnitudeSq u) *^ u
 
-instance VectorSpace Double where
-  type Scalar Double = Double
-  (*^) = (*)
-instance InnerSpace  Double where (<.>) = (*)
+#define ScalarType(t) \
+  instance VectorSpace (t) where \
+    { type Scalar (t) = (t) \
+    ; (*^) = (*) } ; \
+  instance InnerSpace  (t) where (<.>) = (*)
 
-instance VectorSpace Float  where
-  type Scalar Float = Float
-  (*^)  = (*)
-instance InnerSpace  Float  where (<.>) = (*)
+ScalarType(Int)
+ScalarType(Integer)
+ScalarType(Double)
+ScalarType(Float)
 
 instance Integral a => VectorSpace (Ratio a) where
   type Scalar (Ratio a) = Ratio a

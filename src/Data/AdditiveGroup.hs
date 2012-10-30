@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators, CPP #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :   Data.AdditiveGroup
@@ -55,12 +55,16 @@ instance AdditiveGroup () where
 -- 
 -- instance AdditiveGroup n where {zeroV=0; (^+^) = (+); negateV = negate}
 
-instance AdditiveGroup Int     where {zeroV=0; (^+^) = (+); negateV = negate}
-instance AdditiveGroup Integer where {zeroV=0; (^+^) = (+); negateV = negate}
-instance AdditiveGroup Float   where {zeroV=0; (^+^) = (+); negateV = negate}
-instance AdditiveGroup Double  where {zeroV=0; (^+^) = (+); negateV = negate}
-instance Integral a => AdditiveGroup (Ratio a) where
-  {zeroV=0; (^+^) = (+); negateV = negate}
+#define ScalarTypeCon(con,t) \
+  instance con => AdditiveGroup (t) where {zeroV=0; (^+^) = (+); negateV = negate}
+
+#define ScalarType(t) ScalarTypeCon((),t)
+
+ScalarType(Int)
+ScalarType(Integer)
+ScalarType(Float)
+ScalarType(Double)
+ScalarTypeCon(Integral a,Ratio a)
 
 instance (RealFloat v, AdditiveGroup v) => AdditiveGroup (Complex v) where
   zeroV   = zeroV :+ zeroV
