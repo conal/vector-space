@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeOperators
            , TypeFamilies, UndecidableInstances, CPP
+           , FlexibleContexts
  #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
@@ -48,7 +49,7 @@ class AdditiveGroup v => VectorSpace v where
 infixr 7 <.>
 
 -- | Adds inner (dot) products.
-class VectorSpace v => InnerSpace v where
+class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
 
@@ -107,7 +108,7 @@ instance (RealFloat v, VectorSpace v) => VectorSpace (Complex v) where
   type Scalar (Complex v) = Scalar v
   s*^(u :+ v) = s*^u :+ s*^v
 
-instance (RealFloat v, InnerSpace v, s ~ Scalar v, AdditiveGroup s)
+instance (RealFloat v, InnerSpace v)
      => InnerSpace (Complex v) where
   (u :+ v) <.> (u' :+ v') = (u <.> u') ^+^ (v <.> v')
 
@@ -127,8 +128,7 @@ instance ( VectorSpace u, s ~ Scalar u
   s *^ (u,v) = (s*^u,s*^v)
 
 instance ( InnerSpace u, s ~ Scalar u
-         , InnerSpace v, s ~ Scalar v
-         , AdditiveGroup (Scalar v) )
+         , InnerSpace v, s ~ Scalar v )
     => InnerSpace (u,v) where
   (u,v) <.> (u',v') = (u <.> u') ^+^ (v <.> v')
 
@@ -141,8 +141,7 @@ instance ( VectorSpace u, s ~ Scalar u
 
 instance ( InnerSpace u, s ~ Scalar u
          , InnerSpace v, s ~ Scalar v
-         , InnerSpace w, s ~ Scalar w
-         , AdditiveGroup s )
+         , InnerSpace w, s ~ Scalar w )
     => InnerSpace (u,v,w) where
   (u,v,w) <.> (u',v',w') = u<.>u' ^+^ v<.>v' ^+^ w<.>w'
 
@@ -157,8 +156,7 @@ instance ( VectorSpace u, s ~ Scalar u
 instance ( InnerSpace u, s ~ Scalar u
          , InnerSpace v, s ~ Scalar v
          , InnerSpace w, s ~ Scalar w
-         , InnerSpace x, s ~ Scalar x
-         , AdditiveGroup s )
+         , InnerSpace x, s ~ Scalar x )
     => InnerSpace (u,v,w,x) where
   (u,v,w,x) <.> (u',v',w',x') = u<.>u' ^+^ v<.>v' ^+^ w<.>w' ^+^ x<.>x'
 
@@ -196,7 +194,7 @@ instance (HasTrie a, VectorSpace v) => VectorSpace (a :->: v) where
 
 
 
-instance (InnerSpace a, AdditiveGroup (Scalar a)) => InnerSpace (Maybe a) where
+instance InnerSpace a => InnerSpace (Maybe a) where
   -- dotting with zero (vector) yields zero (scalar)
   Nothing <.> _     = zeroV
   _ <.> Nothing     = zeroV
