@@ -21,7 +21,16 @@ import Data.Ratio
 
 import Data.VectorSpace
 
-infix 4 .+^, .-^, .-.
+-- Through 0.8.4, I used the following fixities.
+-- 
+--   infix 4 .+^, .-^, .-.
+-- 
+-- Changed in 0.8.5 to match precedence of + and -, and to associate usefully.
+-- Thanks to Ben Gamari for suggesting left-associativity.
+
+infixl 6 .+^, .-^
+infix  6 .-.
+
 
 -- TODO: Convert AffineSpace from fundep to associated type, and eliminate
 -- FunctionalDependencies above.
