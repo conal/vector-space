@@ -24,6 +24,7 @@ module Data.Basis (HasBasis(..), linearCombo, recompose) where
 -- import Control.Applicative ((<$>))
 import Control.Arrow (first)
 import Data.Ratio
+import Foreign.C.Types (CFloat, CDouble)
 -- import Data.Either
 
 import Data.VectorSpace
@@ -68,8 +69,20 @@ instance HasBasis Float where
   decompose s      = [((),s)]
   decompose' s     = const s
 
+instance HasBasis CFloat where
+  type Basis CFloat = ()
+  basisValue ()    = 1
+  decompose s      = [((),s)]
+  decompose' s     = const s
+
 instance HasBasis Double where
   type Basis Double = ()
+  basisValue ()     = 1
+  decompose s       = [((),s)]
+  decompose' s      = const s
+
+instance HasBasis CDouble where
+  type Basis CDouble = ()
   basisValue ()     = 1
   decompose s       = [((),s)]
   decompose' s      = const s
