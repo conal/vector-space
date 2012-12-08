@@ -24,6 +24,7 @@ import Data.Monoid (Monoid(..))
 import Data.Foldable (Foldable,foldr)
 import Data.Complex hiding (magnitude)
 import Data.Ratio
+import Foreign.C.Types (CInt, CShort, CLong, CLLong, CFloat, CDouble)
 
 import Data.MemoTrie
 
@@ -64,6 +65,12 @@ ScalarType(Int)
 ScalarType(Integer)
 ScalarType(Float)
 ScalarType(Double)
+ScalarType(CInt)
+ScalarType(CShort)
+ScalarType(CLong)
+ScalarType(CLLong)
+ScalarType(CFloat)
+ScalarType(CDouble)
 ScalarTypeCon(Integral a,Ratio a)
 
 instance (RealFloat v, AdditiveGroup v) => AdditiveGroup (Complex v) where

@@ -18,6 +18,7 @@ module Data.AffineSpace
 
 import Control.Applicative (liftA2)
 import Data.Ratio
+import Foreign.C.Types (CFloat, CDouble)
 
 import Data.VectorSpace
 
@@ -70,8 +71,18 @@ instance  AffineSpace Double where
   (.-.) =  (-)
   (.+^) =  (+)
 
+instance  AffineSpace CDouble where
+  type Diff CDouble = CDouble
+  (.-.) =  (-)
+  (.+^) =  (+)
+
 instance  AffineSpace Float where
   type Diff Float = Float
+  (.-.) =  (-)
+  (.+^) =  (+)
+
+instance  AffineSpace CFloat where
+  type Diff CFloat = CFloat
   (.-.) =  (-)
   (.+^) =  (+)
 
