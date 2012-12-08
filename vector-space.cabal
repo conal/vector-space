@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.8.5
+Version:             0.8.6
 Cabal-Version:       >= 1.6
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
@@ -11,7 +11,7 @@ Description:
   (scalars, vectors, matrices, ...).
   .
   /Warning/: this package depends on type families working fairly well,
-  and requires ghc version at least 6.9.
+  requiring GHC version at least 6.9.
   .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
   .

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, TypeFamilies, CPP #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.AffineSpace
@@ -66,30 +66,20 @@ alerp :: (AffineSpace p, VectorSpace (Diff p)) =>
          p -> p -> Scalar (Diff p) -> p
 alerp p p' s = p .+^ (s *^ (p' .-. p))
 
-instance  AffineSpace Double where
-  type Diff Double = Double
-  (.-.) =  (-)
-  (.+^) =  (+)
 
-instance  AffineSpace CDouble where
-  type Diff CDouble = CDouble
-  (.-.) =  (-)
-  (.+^) =  (+)
+#define ScalarTypeCon(con,t) \
+  instance con => AffineSpace (t) where \
+    { type Diff (t) = t \
+    ; (.-.) = (-) \
+    ; (.+^) = (+) }
 
-instance  AffineSpace Float where
-  type Diff Float = Float
-  (.-.) =  (-)
-  (.+^) =  (+)
+#define ScalarType(t) ScalarTypeCon((),t)
 
-instance  AffineSpace CFloat where
-  type Diff CFloat = CFloat
-  (.-.) =  (-)
-  (.+^) =  (+)
-
-instance Integral a => AffineSpace (Ratio a) where
-  type Diff (Ratio a) = Ratio a
-  (.-.) = (-)
-  (.+^) = (+)
+ScalarType(Double)
+ScalarType(CDouble)
+ScalarType(Float)
+ScalarType(CFloat)
+ScalarTypeCon(Integral a,Ratio a)
 
 instance (AffineSpace p, AffineSpace q) => AffineSpace (p,q) where
   type Diff (p,q)   = (Diff p, Diff q)

@@ -1,9 +1,5 @@
--- WARNING: this module depends on type families working fairly well, and
--- requires ghc version at least 6.9.  I didn't find a way to specify that
--- dependency in the .cabal.
--- 
 {-# LANGUAGE TypeOperators, TypeFamilies, UndecidableInstances
-  , FlexibleInstances, MultiParamTypeClasses
+  , FlexibleInstances, MultiParamTypeClasses, CPP
   #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
@@ -63,35 +59,20 @@ recompose = linearCombo . fmap (first basisValue)
 -- However, I don't seem to use recompose anywhere.
 -- I don't even use basisValue or decompose.
 
-instance HasBasis Float where
-  type Basis Float = ()
-  basisValue ()    = 1
-  decompose s      = [((),s)]
-  decompose' s     = const s
+#define ScalarTypeCon(con,t) \
+  instance con => HasBasis (t) where \
+    { type Basis (t) = () \
+    ; basisValue ()  = 1 \
+    ; decompose s    = [((),s)] \
+    ; decompose' s   = const s }
 
-instance HasBasis CFloat where
-  type Basis CFloat = ()
-  basisValue ()    = 1
-  decompose s      = [((),s)]
-  decompose' s     = const s
+#define ScalarType(t) ScalarTypeCon((),t)
 
-instance HasBasis Double where
-  type Basis Double = ()
-  basisValue ()     = 1
-  decompose s       = [((),s)]
-  decompose' s      = const s
-
-instance HasBasis CDouble where
-  type Basis CDouble = ()
-  basisValue ()     = 1
-  decompose s       = [((),s)]
-  decompose' s      = const s
-
-instance Integral a => HasBasis (Ratio a) where
-  type Basis (Ratio a) = ()
-  basisValue ()        = 1
-  decompose s          = [((),s)]
-  decompose' s         = const s
+ScalarType(Float)
+ScalarType(CFloat)
+ScalarType(Double)
+ScalarType(CDouble)
+ScalarTypeCon(Integral a, Ratio a)
 
 instance ( HasBasis u, s ~ Scalar u
          , HasBasis v, s ~ Scalar v )
