@@ -33,6 +33,7 @@ module Data.VectorSpace
 
 import Control.Applicative (liftA2)
 import Data.Complex hiding (magnitude)
+import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Data.Ratio
 
 import Data.AdditiveGroup
@@ -98,6 +99,14 @@ ScalarType(Int)
 ScalarType(Integer)
 ScalarType(Double)
 ScalarType(Float)
+ScalarType(CSChar)
+ScalarType(CInt)
+ScalarType(CShort)
+ScalarType(CLong)
+ScalarType(CLLong)
+ScalarType(CIntMax)
+ScalarType(CDouble)
+ScalarType(CFloat)
 
 instance Integral a => VectorSpace (Ratio a) where
   type Scalar (Ratio a) = Ratio a
