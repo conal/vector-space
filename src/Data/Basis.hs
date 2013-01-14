@@ -15,7 +15,7 @@
 -- This module requires ghc-6.10 or later
 ----------------------------------------------------------------------
 
-module Data.Basis (HasBasis(..), linearCombo, recompose) where
+module Data.Basis (HasBasis(..), linearCombo, recompose, (^/^)) where
 
 -- import Control.Applicative ((<$>))
 import Control.Arrow (first)
@@ -50,6 +50,11 @@ recompose :: HasBasis v => [(Basis v, Scalar v)] -> v
 recompose = linearCombo . fmap (first basisValue)
 
 -- recompose ps = linearCombo (first basisValue <$> ps)
+
+-- | Vector divided by vector, if space is one-dimensional
+{-# INLINE (^/^) #-}
+(^/^) :: (HasBasis v, Basis v ~ (), Scalar v ~ s, Fractional s) => v -> v -> s
+u ^/^ v = decompose' u () / decompose' v ()
 
 
 -- I don't know how to define
