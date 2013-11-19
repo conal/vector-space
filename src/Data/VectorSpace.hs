@@ -28,10 +28,12 @@ module Data.VectorSpace
   ( module Data.AdditiveGroup
   , VectorSpace(..), (^/), (^*)
   , InnerSpace(..)
+  , OneDimensional(..)
   , lerp, magnitudeSq, magnitude, normalized, project
   ) where
 
 import Control.Applicative (liftA2)
+import Control.Exception (ArithException(..), throw)
 import Data.Complex hiding (magnitude)
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Data.Ratio
@@ -53,6 +55,13 @@ infixr 7 <.>
 class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
+
+infix 7 ^/^
+
+-- | One-dimensional vector space.
+class VectorSpace v => OneDimensional v where
+  -- | Ratio of two vectors
+  (^/^) :: v -> v -> Scalar v
 
 infixr 7 ^/
 infixl 7 ^*
@@ -107,6 +116,14 @@ ScalarType(CLLong)
 ScalarType(CIntMax)
 ScalarType(CDouble)
 ScalarType(CFloat)
+
+#define FractionalScalarType(t) \
+  instance OneDimensional (t) where (^/^) = (/)
+
+FractionalScalarType(Double)
+FractionalScalarType(Float)
+FractionalScalarType(CDouble)
+FractionalScalarType(CFloat)
 
 instance Integral a => VectorSpace (Ratio a) where
   type Scalar (Ratio a) = Ratio a
@@ -179,6 +196,11 @@ instance VectorSpace v => VectorSpace (Maybe v) where
   type Scalar (Maybe v) = Scalar v
   (*^) s = fmap (s *^)
 
+instance (OneDimensional v) => OneDimensional (Maybe v) where
+  _ ^/^ Nothing = throw DivideByZero
+  Nothing ^/^ Just y = zeroV ^/^ y
+  Just x ^/^ Just y = x ^/^ y
+
 -- instance VectorSpace v => VectorSpace (a -> v) where
 --   type Scalar (a -> v) = Scalar v
 --   (*^) s = fmap (s *^)
@@ -195,6 +217,8 @@ instance VectorSpace v => VectorSpace (a -> v) where
 instance InnerSpace v => InnerSpace (a -> v) where
   (<.>) = liftA2 (<.>)
 
+instance OneDimensional v => OneDimensional (a -> v) where
+  (^/^) = liftA2 (^/^)
 
 
 instance (HasTrie a, VectorSpace v) => VectorSpace (a :->: v) where
