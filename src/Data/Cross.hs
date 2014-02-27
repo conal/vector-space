@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators
-           , TypeFamilies, TypeSynonymInstances
-  #-}
+           , TypeFamilies, TypeSynonymInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |

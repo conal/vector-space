@@ -1,8 +1,7 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
            , TypeSynonymInstances, FlexibleInstances
            , FlexibleContexts, TypeFamilies
-           , ScopedTypeVariables
-  #-}
+           , ScopedTypeVariables #-}
 
 -- The ScopedTypeVariables is there just as a bug work-around.  Without it
 -- I get a bogus error about context mismatch for mutually recursive
