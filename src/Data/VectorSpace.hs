@@ -1,7 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeOperators
-           , TypeFamilies, UndecidableInstances, CPP
-           , FlexibleContexts
- #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeOperators,
+             TypeFamilies, UndecidableInstances, CPP,
+             FlexibleContexts #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
