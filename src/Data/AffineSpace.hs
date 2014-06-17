@@ -13,12 +13,13 @@
 
 module Data.AffineSpace
   (
-    AffineSpace(..), (.-^), distanceSq, distance, alerp
+    AffineSpace(..), (.-^), distanceSq, distance, alerp, affineCombo
   ) where
 
 import Control.Applicative (liftA2)
 import Data.Ratio
 import Foreign.C.Types (CFloat, CDouble)
+import Control.Arrow(first)
 
 import Data.VectorSpace
 
@@ -66,6 +67,23 @@ alerp :: (AffineSpace p, VectorSpace (Diff p)) =>
          p -> p -> Scalar (Diff p) -> p
 alerp p p' s = p .+^ (s *^ (p' .-. p))
 
+-- | Compute an affine combination (weighted average) of points.
+-- The first element is used as origin and is weighted
+-- such that all coefficients sum to 1. For example,
+--
+-- > affineCombo a [(0.3,b), (0.2,c)]
+--
+-- is equal to
+--
+-- > a .+^ (0.3 *^ (b .-. a) ^+^ 0.2 *^ (c .-. a))
+--
+-- and if @a@, @b@, and @c@ were in a vector space would also be equal to
+--
+-- > 0.5 *^ a ^+^ 0.3 *^ b ^+^ 0.2 *^ c
+--
+-- See also 'linearCombo' (on vector spaces).
+affineCombo :: (AffineSpace p, v ~ Diff p, VectorSpace v) => p -> [(p,Scalar v)] -> p
+affineCombo z l = z .+^ linearCombo (map (first (.-. z)) l)
 
 #define ScalarTypeCon(con,t) \
   instance con => AffineSpace (t) where \
