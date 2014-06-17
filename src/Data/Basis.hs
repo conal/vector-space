@@ -41,16 +41,11 @@ class VectorSpace v => HasBasis v where
 
 -- Defining property: recompose . decompose == id
 
--- | Linear combination
-linearCombo :: VectorSpace v => [(v,Scalar v)] -> v
-linearCombo ps = sumV [s *^ v | (v,s) <- ps]
-
 -- Turn a basis decomposition back into a vector.
 recompose :: HasBasis v => [(Basis v, Scalar v)] -> v
 recompose = linearCombo . fmap (first basisValue)
 
 -- recompose ps = linearCombo (first basisValue <$> ps)
-
 
 -- I don't know how to define
 -- 

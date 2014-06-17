@@ -28,7 +28,7 @@ module Data.VectorSpace
   ( module Data.AdditiveGroup
   , VectorSpace(..), (^/), (^*)
   , InnerSpace(..)
-  , lerp, magnitudeSq, magnitude, normalized, project
+  , lerp, linearCombo, magnitudeSq, magnitude, normalized, project
   ) where
 
 import Control.Applicative (liftA2)
@@ -70,6 +70,10 @@ v ^/ s = (1/s) *^ v
 -- lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
 lerp :: VectorSpace v => v -> v -> Scalar v -> v
 lerp a b t = a ^+^ t *^ (b ^-^ a)
+
+-- | Linear combination of vectors
+linearCombo :: VectorSpace v => [(v,Scalar v)] -> v
+linearCombo ps = sumV [v ^* s | (v,s) <- ps]
 
 -- | Square of the length of a vector.  Sometimes useful for efficiency.
 -- See also 'magnitude'.
