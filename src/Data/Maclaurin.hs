@@ -2,6 +2,7 @@
            , TypeSynonymInstances, FlexibleInstances
            , FlexibleContexts, TypeFamilies
            , ScopedTypeVariables
+           , CPP
   #-}
 
 -- The ScopedTypeVariables is there just as a bug work-around.  Without it
@@ -41,6 +42,10 @@ module Data.Maclaurin
   , pairD, unpairD, tripleD, untripleD
   ) 
     where
+
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding ((<*))
+#endif
 
 -- import Control.Applicative (liftA2)
 import Data.Function (on)
