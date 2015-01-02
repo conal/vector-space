@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances
            , TypeSynonymInstances, FlexibleInstances
            , FlexibleContexts, TypeFamilies
-           , ScopedTypeVariables
+           , ScopedTypeVariables, CPP
   #-}
 
 -- The ScopedTypeVariables is there just as a bug work-around.  Without it
@@ -52,6 +52,10 @@ import Data.Basis
 import Data.LinearMap
 
 import Data.Boolean
+
+#if MIN_VERSION_base(4,8,0)
+import Prelude hiding ((<*))
+#endif
 
 infixr 9 `D`
 -- | Tower of derivatives.

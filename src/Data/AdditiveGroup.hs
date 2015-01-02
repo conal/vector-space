@@ -20,8 +20,11 @@ module Data.AdditiveGroup
 import Prelude hiding (foldr)
 
 import Control.Applicative
+#if !(MIN_VERSION_base(4,8,0))
 import Data.Monoid (Monoid(..))
-import Data.Foldable (Foldable,foldr)
+import Data.Foldable (Foldable)
+#endif
+import Data.Foldable (foldr)
 import Data.Complex hiding (magnitude)
 import Data.Ratio
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)

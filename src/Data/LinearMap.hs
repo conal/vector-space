@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+{-# LANGUAGE CPP, TypeOperators, FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
@@ -21,7 +21,10 @@ module Data.LinearMap
    )
   where
 
-import Control.Applicative (Applicative,liftA2,liftA3)
+#if !(MIN_VERSION_base(4,8,0))
+import Control.Applicative (Applicative)
+#endif
+import Control.Applicative (liftA2, liftA3)
 import Control.Arrow       (first)
 
 import Data.MemoTrie      (HasTrie(..),(:->:))
