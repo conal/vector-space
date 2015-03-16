@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, UndecidableInstances
-  , FlexibleInstances, MultiParamTypeClasses, CPP
-  #-}
+  , FlexibleInstances, MultiParamTypeClasses, CPP  #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
