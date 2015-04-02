@@ -13,7 +13,7 @@
 
 module Data.AdditiveGroup
   ( 
-    AdditiveGroup(..), (^-^), sumV
+    AdditiveGroup(..), sumV
   , Sum(..), inSum, inSum2
   ) where
 
@@ -41,10 +41,9 @@ class AdditiveGroup v where
   (^+^) :: v -> v -> v
   -- | Additive inverse
   negateV :: v -> v
-
--- | Group subtraction
-(^-^) :: AdditiveGroup v => v -> v -> v
-v ^-^ v' = v ^+^ negateV v'
+  -- | Group subtraction
+  (^-^) :: v -> v -> v
+  v ^-^ v' = v ^+^ negateV v'
 
 -- | Sum over several vectors
 sumV :: (Foldable f, AdditiveGroup v) => f v -> v
