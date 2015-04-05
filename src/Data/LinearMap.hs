@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP, TypeOperators, FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+{-# LANGUAGE CPP, TypeOperators, FlexibleContexts, TypeFamilies
+  , GeneralizedNewtypeDeriving, StandaloneDeriving, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
@@ -54,6 +55,11 @@ instance (HasTrie (Basis u), VectorSpace v) =>
          VectorSpace (u :-* v) where
   type Scalar (u :-* v) = Scalar v
   (*^) s = (inLMap.liftMS.fmap) (s *^)
+
+-- In GHC 7.10:
+-- Constraint is no smaller than the instance head
+-- in the constraint: HasTrie (Basis u)
+-- (Use UndecidableInstances to permit this)
 
 firstL :: ( HasBasis u, HasBasis u', HasBasis v
           , HasTrie (Basis u), HasTrie (Basis v) 
