@@ -18,7 +18,7 @@ module Data.AffineSpace
 
 import Control.Applicative (liftA2)
 import Data.Ratio
-import Foreign.C.Types (CFloat, CDouble)
+import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Control.Arrow(first)
 
 import Data.VectorSpace
@@ -93,9 +93,17 @@ affineCombo z l = z .+^ linearCombo (map (first (.-. z)) l)
 
 #define ScalarType(t) ScalarTypeCon((),t)
 
+ScalarType(Int)
+ScalarType(Integer)
 ScalarType(Double)
-ScalarType(CDouble)
 ScalarType(Float)
+ScalarType(CSChar)
+ScalarType(CInt)
+ScalarType(CShort)
+ScalarType(CLong)
+ScalarType(CLLong)
+ScalarType(CIntMax)
+ScalarType(CDouble)
 ScalarType(CFloat)
 ScalarTypeCon(Integral a,Ratio a)
 
