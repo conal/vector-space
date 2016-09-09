@@ -1,10 +1,11 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE CPP, TypeOperators, FlexibleContexts, TypeFamilies
   , GeneralizedNewtypeDeriving, StandaloneDeriving, UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.LinearMap
--- Copyright   :  (c) Conal Elliott 2008-2012
+-- Copyright   :  (c) Conal Elliott 2008-2016
 -- License     :  BSD3
 --
 -- Maintainer  :  conal@conal.net
@@ -18,7 +19,8 @@ module Data.LinearMap
    , inLMap, inLMap2, inLMap3
    , liftMS, liftMS2, liftMS3
    , liftL, liftL2, liftL3
-   , firstL
+   , exlL, exrL, forkL, firstL, secondL
+   , inlL, inrL, joinL -- , leftL, rightL
    )
   where
 
@@ -26,7 +28,7 @@ module Data.LinearMap
 import Control.Applicative (Applicative)
 #endif
 import Control.Applicative (liftA2, liftA3)
-import Control.Arrow       (first)
+import Control.Arrow       (first,second)
 
 import Data.MemoTrie      (HasTrie(..),(:->:))
 import Data.AdditiveGroup (Sum(..), AdditiveGroup(..))
@@ -45,6 +47,7 @@ jsum = Just . Sum
 
 type LMap' u v = MSum (Basis u :->: v)
 
+infixr 1 :-*
 -- | Linear map, represented as an optional memo-trie from basis to
 -- values, where 'Nothing' means the zero map (an optimization).
 newtype u :-* v = LMap { unLMap :: LMap' u v }
@@ -61,12 +64,33 @@ instance (HasTrie (Basis u), VectorSpace v) =>
 -- in the constraint: HasTrie (Basis u)
 -- (Use UndecidableInstances to permit this)
 
-firstL :: ( HasBasis u, HasBasis u', HasBasis v
-          , HasTrie (Basis u), HasTrie (Basis v) 
-          , Scalar u ~ Scalar v, Scalar u ~ Scalar u'
-          ) =>
-          (u :-* u') -> ((u,v) :-* (u',v))
-firstL = linear.first.lapply
+exlL :: ( HasBasis a, HasTrie (Basis a), HasBasis b, HasTrie (Basis b)
+        , Scalar a ~ Scalar b )
+     => (a,b) :-* a
+exlL = linear fst
+
+exrL :: ( HasBasis a, HasTrie (Basis a), HasBasis b, HasTrie (Basis b)
+        , Scalar a ~ Scalar b )
+     => (a,b) :-* b
+exrL = linear snd
+
+forkL :: (HasTrie (Basis a), HasBasis c, HasBasis d)
+      => (a :-* c) -> (a :-* d) -> (a :-* (c,d))
+forkL = (inLMap2.liftL2) (,)
+
+firstL  :: ( HasBasis u, HasBasis u', HasBasis v
+           , HasTrie (Basis u), HasTrie (Basis v) 
+           , Scalar u ~ Scalar v, Scalar u ~ Scalar u'
+           ) =>
+           (u :-* u') -> ((u,v) :-* (u',v))
+firstL  = linear.first.lapply
+
+secondL :: ( HasBasis u, HasBasis v, HasBasis v'
+           , HasTrie (Basis u), HasTrie (Basis v) 
+           , Scalar u ~ Scalar v, Scalar u ~ Scalar v'
+           ) =>
+           (v :-* v') -> ((u,v) :-* (u,v'))
+secondL = linear.second.lapply
 
 -- TODO: more efficient firstL
 
@@ -77,6 +101,21 @@ firstL = linear.first.lapply
 -- (liftMS.fmap) (s *^) :: LMap' u v -> LMap' u v
 -- (inLMap.liftMS.fmap) (s *^) :: (u :-* v) -> (u :-* v)
 
+
+inlL :: (HasBasis a, HasTrie (Basis a), HasBasis b)
+     => a :-* (a,b)
+inlL = linear (,zeroV)
+
+inrL :: (HasBasis a, HasBasis b, HasTrie (Basis b))
+     => b :-* (a,b)
+inrL = linear (zeroV,)
+
+joinL :: ( HasBasis a, HasTrie (Basis a)
+         , HasBasis b, HasTrie (Basis b)
+         , Scalar a ~ Scalar b, Scalar a ~ Scalar c
+         , VectorSpace c )
+      => (a :-* c) -> (b :-* c) -> ((a,b) :-* c)
+f `joinL` g = linear (\ (a,b) -> lapply f a ^+^ lapply g b)
 
 -- Before version 0.7, u :-* v was a type synonym, resulting in a subtle
 -- ambiguity: u:-*v == u':-*v' does not imply that u==u', since Basis
@@ -137,7 +176,7 @@ idL = linear id
 
 infixr 9 *.*
 -- | Compose linear maps
-(*.*) :: ( HasBasis u, HasTrie (Basis u)
+(*.*) :: ( HasTrie (Basis u)
          , HasBasis v, HasTrie (Basis v)
          , VectorSpace w
          , Scalar v ~ Scalar w ) =>
@@ -182,9 +221,7 @@ infixr 9 *.*
 -- to values and then decomposed, followed by recombination of the
 -- results.
 
-liftMS :: (AdditiveGroup a) =>
-          (a -> b)
-       -> (MSum a -> MSum b)
+liftMS :: (a -> b) -> (MSum a -> MSum b)
 -- liftMS _ Nothing = Nothing
 -- liftMS h ma = Just (Sum (h (z ma)))
 
@@ -209,8 +246,7 @@ fromMS (Just (Sum u)) = u
 
 -- | Apply a linear function to each element of a linear map.
 -- @liftL f l == linear f *.* l@, but works more efficiently.
-liftL :: (Functor f, AdditiveGroup (f a)) =>
-         (a -> b) -> MSum (f a) -> MSum (f b)
+liftL :: Functor f => (a -> b) -> MSum (f a) -> MSum (f b)
 liftL = liftMS . fmap
 
 -- | Apply a linear binary function (not to be confused with a bilinear
@@ -261,7 +297,6 @@ infixr 9 *.*
 
 
 -}
-
 
 -----
 
