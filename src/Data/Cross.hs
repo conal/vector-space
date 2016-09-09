@@ -48,8 +48,7 @@ class HasCross2 v where cross2 :: v -> v
 instance AdditiveGroup u => HasCross2 (u,u) where
   cross2 (x,y) = (negateV y,x)  -- or @(y,-x)@?
 
-instance ( HasBasis a, HasTrie (Basis a)
-         , VectorSpace v, HasCross2 v) => HasCross2 (a:>v) where
+instance (HasTrie (Basis a), HasCross2 v) => HasCross2 (a:>v) where
   -- 2d cross-product is linear
   cross2 = fmapD cross2
 
@@ -73,8 +72,7 @@ instance (HasBasis s, HasTrie (Basis s), Basis s ~ ()) =>
 -- l `atB` b = maybe zeroV (`untrie` b) l
 
 
-instance ( Num s, VectorSpace s
-         , HasBasis s, HasTrie (Basis s), Basis s ~ ())
+instance (VectorSpace s, HasBasis s, HasTrie (Basis s), Basis s ~ ())
     => HasNormal (Two (One s :> s)) where
   normalVec = unpairD . normalVec . pairD
 
@@ -101,7 +99,7 @@ instance (Num s, HasTrie (Basis (s, s)), HasBasis s, Basis s ~ ()) =>
    where
      d = derivAtBasis v
 
-instance ( Num s, VectorSpace s, HasBasis s, HasTrie (Basis s)
-         , HasNormal (Two s :> Three s))
+instance ( VectorSpace s, HasBasis s, HasTrie (Basis s)
+         , HasNormal (Two s :> Three s) )
          => HasNormal (Three (Two s :> s)) where
   normalVec = untripleD . normalVec . tripleD

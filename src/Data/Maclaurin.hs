@@ -74,8 +74,7 @@ pureD b = b `D` zeroV
 
 infixl 4 <$>>
 -- | Map a /linear/ function over a derivative tower.
-fmapD, (<$>>) :: (HasBasis a, HasTrie (Basis a), AdditiveGroup b) =>
-                 (b -> c) -> (a :> b) -> (a :> c)
+fmapD, (<$>>) :: HasTrie (Basis a) => (b -> c) -> (a :> b) -> (a :> c)
 fmapD f = lf
  where
    lf (D b0 b') = D (f b0) ((inLMap.liftL) lf b')
@@ -111,9 +110,7 @@ liftD3 f = lf
 
 -- | Differentiable identity function.  Sometimes called "the
 -- derivation variable" or similar, but it's not really a variable.
-idD :: ( VectorSpace u, s ~ Scalar u
-       , VectorSpace (u :> u), VectorSpace s
-       , HasBasis u, HasTrie (Basis u)) =>
+idD :: (VectorSpace u , HasBasis u, HasTrie (Basis u)) =>
        u :~> u
 idD = linearD id
 
@@ -168,9 +165,7 @@ sndD = linearD snd
 -- | Derivative tower for applying a binary function that distributes over
 -- addition, such as multiplication.  A bit weaker assumption than
 -- bilinearity.  Is bilinearity necessary for correctness here?
-distrib :: forall a b c u.
-           ( HasBasis a, HasTrie (Basis a)
-           , AdditiveGroup b, AdditiveGroup c, AdditiveGroup u) =>
+distrib :: forall a b c u. (HasBasis a, HasTrie (Basis a) , AdditiveGroup u) =>
            (b -> c -> u) -> (a :> b) -> (a :> c) -> (a :> u)
 
 distrib op = (#)
@@ -190,7 +185,7 @@ distrib op = (#)
 instance Show b => Show (a :> b) where
   show (D b0 _) = "D " ++ show b0  ++ " ..."
 
-instance Eq   b => Eq   (a :> b) where (==)    = noOv "(==)"
+instance Eq   (a :> b) where (==)    = noOv "(==)"
 
 type instance BooleanOf (a :> b) = BooleanOf b
 
@@ -198,8 +193,7 @@ instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), IfB v) =>
       IfB (u :> v) where
   ifB = liftD2 . ifB
 
-instance (AdditiveGroup v, HasBasis u, HasTrie (Basis u), OrdB v) =>
-         OrdB (u :> v) where
+instance OrdB v => OrdB (u :> v) where
   (<*) = (<*) `on` powVal
 
 instance ( AdditiveGroup b, HasBasis a, HasTrie (Basis a)
@@ -218,8 +212,7 @@ instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :>
   -- Less efficient: adds zero
   -- (^+^)   = liftD2 (^+^)
 
-instance ( HasBasis a, HasTrie (Basis a)
-         , VectorSpace u, AdditiveGroup (Scalar u) )
+instance (HasBasis a, HasTrie (Basis a), VectorSpace u)
       => VectorSpace (a :> u) where
   type Scalar (a :> u) = (a :> Scalar u)
   (*^) = distrib (*^)                     
@@ -241,8 +234,7 @@ instance ( InnerSpace u, s ~ Scalar u, AdditiveGroup s
 infix  0 >-<
 
 -- | Specialized chain rule.  See also '(\@.)'
-(>-<) :: ( HasBasis a, HasTrie (Basis a), VectorSpace u
-         , AdditiveGroup (Scalar u)) =>
+(>-<) :: (HasBasis a, HasTrie (Basis a), VectorSpace u) =>
          (u -> u) -> ((a :> u) -> (a :> Scalar u))
       -> (a :> u) -> (a :> u)
 f >-< f' = \ u@(D u0 u') -> D (f u0) ((inLMap.liftMS) (f' u *^) u')
@@ -298,31 +290,21 @@ derivAtBasis f = atBasis (derivative f)
 
 ---- Misc
 
-pairD :: ( HasBasis a, HasTrie (Basis a)
-         , VectorSpace b, VectorSpace c
-         , Scalar b ~ Scalar c
-         ) => (a:>b,a:>c) -> a:>(b,c)
+pairD :: (HasBasis a, HasTrie (Basis a), VectorSpace b, VectorSpace c)
+      => (a:>b,a:>c) -> a:>(b,c)
 
 pairD (u,v) = liftD2 (,) u v
 
-unpairD :: ( HasBasis a, HasTrie (Basis a)
-           , VectorSpace a, VectorSpace b, VectorSpace c
-           , Scalar b ~ Scalar c
-           ) => (a :> (b,c)) -> (a:>b, a:>c)
+unpairD :: HasTrie (Basis a) => (a :> (b,c)) -> (a:>b, a:>c)
 unpairD d = (fst <$>> d, snd <$>> d)
 
 
 tripleD :: ( HasBasis a, HasTrie (Basis a)
            , VectorSpace b, VectorSpace c, VectorSpace d
-           , Scalar b ~ Scalar c, Scalar c ~ Scalar d
            ) => (a:>b,a:>c,a:>d) -> a:>(b,c,d)
 tripleD (u,v,w) = liftD3 (,,) u v w
 
-untripleD :: ( HasBasis a, HasTrie (Basis a)
-             , VectorSpace a, VectorSpace b, VectorSpace c, VectorSpace d
-             , Scalar b ~ Scalar c, Scalar c ~ Scalar d
-             ) =>
-             (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
+untripleD :: HasTrie (Basis a) => (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
 untripleD d =
   ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)
 
