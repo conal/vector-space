@@ -24,7 +24,7 @@
 -- Stability   :  experimental
 -- 
 -- Infinite derivative towers via linear maps, using the Maclaurin
--- representation.  See blog posts <http://conal.net/blog/tag/derivatives/>.
+-- representation.  See blog posts <http://conal.net/blog/tag/derivative/>.
 ----------------------------------------------------------------------
 
 module Data.Maclaurin
