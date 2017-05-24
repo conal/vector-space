@@ -1,4 +1,8 @@
 {-# LANGUAGE TypeOperators, CPP #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :   Data.AdditiveGroup
@@ -31,16 +35,25 @@ import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CD
 
 import Data.MemoTrie
 
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
+
 infixl 6 ^+^, ^-^
 
 -- | Additive group @v@.
 class AdditiveGroup v where
   -- | The zero element: identity for '(^+^)'
   zeroV :: v
+  default zeroV :: (Generic v, AdditiveGroup (Gnrx.Rep v ())) => v
+  zeroV = Gnrx.to (zeroV :: Gnrx.Rep v ())
   -- | Add vectors
   (^+^) :: v -> v -> v
+  default (^+^) :: (Generic v, AdditiveGroup (Gnrx.Rep v ())) => v -> v -> v
+  v ^+^ v' = Gnrx.to (Gnrx.from v ^+^ Gnrx.from v' :: Gnrx.Rep v ())
   -- | Additive inverse
   negateV :: v -> v
+  default negateV :: (Generic v, AdditiveGroup (Gnrx.Rep v ())) => v -> v
+  negateV v = Gnrx.to (negateV $ Gnrx.from v :: Gnrx.Rep v ())
   -- | Group subtraction
   (^-^) :: v -> v -> v
   v ^-^ v' = v ^+^ negateV v'
@@ -205,3 +218,21 @@ instance AdditiveGroup a => AdditiveGroup (Sum a) where
 -- argument = flip (.)
 
 -- g ~> f = result g . argument f
+
+
+
+instance AdditiveGroup a => AdditiveGroup (Gnrx.Rec0 a s) where
+  zeroV = Gnrx.K1 zeroV
+  negateV (Gnrx.K1 v) = Gnrx.K1 $ negateV v
+  Gnrx.K1 v ^+^ Gnrx.K1 w = Gnrx.K1 $ v ^+^ w
+  Gnrx.K1 v ^-^ Gnrx.K1 w = Gnrx.K1 $ v ^-^ w
+instance AdditiveGroup (f p) => AdditiveGroup (Gnrx.M1 i c f p) where
+  zeroV = Gnrx.M1 zeroV
+  negateV (Gnrx.M1 v) = Gnrx.M1 $ negateV v
+  Gnrx.M1 v ^+^ Gnrx.M1 w = Gnrx.M1 $ v ^+^ w
+  Gnrx.M1 v ^-^ Gnrx.M1 w = Gnrx.M1 $ v ^-^ w
+instance (AdditiveGroup (f p), AdditiveGroup (g p)) => AdditiveGroup ((f :*: g) p) where
+  zeroV = zeroV :*: zeroV
+  negateV (x:*:y) = negateV x :*: negateV y
+  (x:*:y) ^+^ (ξ:*:υ) = (x^+^ξ) :*: (y^+^υ)
+  (x:*:y) ^-^ (ξ:*:υ) = (x^-^ξ) :*: (y^-^υ)
