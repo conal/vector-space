@@ -1,4 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, TypeFamilies, CPP #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveGeneric        #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.AffineSpace
@@ -23,6 +29,9 @@ import Control.Arrow(first)
 
 import Data.VectorSpace
 
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
+
 -- Through 0.8.4, I used the following fixities.
 -- 
 --   infix 4 .+^, .-^, .-.
@@ -40,10 +49,19 @@ infix  6 .-.
 class AdditiveGroup (Diff p) => AffineSpace p where
   -- | Associated vector space
   type Diff p
+  type Diff p = Diff (Gnrx.Rep p ())
   -- | Subtract points
   (.-.)  :: p -> p -> Diff p
+  default (.-.) :: ( Generic p, AffineSpace (Gnrx.Rep p ()), Generic (Diff p)
+                   , Gnrx.Rep (Diff p) () ~ Diff (Gnrx.Rep p ()) )
+              => p -> p -> Diff p
+  p .-. v = Gnrx.to (Gnrx.from p .-. (Gnrx.from v :: Gnrx.Rep p ()))
   -- | Point plus vector
   (.+^)  :: p -> Diff p -> p
+  default (.+^) :: ( Generic p, AffineSpace (Gnrx.Rep p ()), Generic (Diff p)
+                   , Gnrx.Rep (Diff p) () ~ Diff (Gnrx.Rep p ()) )
+              => p -> Diff p -> p
+  p .+^ v = Gnrx.to (Gnrx.from p .+^ Gnrx.from v :: Gnrx.Rep p ())
 
 -- | Point minus vector
 (.-^) :: AffineSpace p => p -> Diff p -> p
@@ -122,3 +140,22 @@ instance (AffineSpace p) => AffineSpace (a -> p) where
   type Diff (a -> p) = a -> Diff p
   (.-.)              = liftA2 (.-.)
   (.+^)              = liftA2 (.+^)
+
+
+data AffineDiffProductSpace f g p = AffineDiffProductSpace
+            !(Diff (f p)) !(Diff (g p)) deriving (Generic)
+instance (AffineSpace (f p), AffineSpace (g p))
+    => AdditiveGroup (AffineDiffProductSpace f g p)
+
+instance AffineSpace a => AffineSpace (Gnrx.Rec0 a s) where
+  type Diff (Gnrx.Rec0 a s) = Diff a
+  Gnrx.K1 v .+^ w = Gnrx.K1 $ v .+^ w
+  Gnrx.K1 v .-. Gnrx.K1 w = v .-. w
+instance AffineSpace (f p) => AffineSpace (Gnrx.M1 i c f p) where
+  type Diff (Gnrx.M1 i c f p) = Diff (f p)
+  Gnrx.M1 v .+^ w = Gnrx.M1 $ v .+^ w
+  Gnrx.M1 v .-. Gnrx.M1 w = v .-. w
+instance (AffineSpace (f p), AffineSpace (g p)) => AffineSpace ((f :*: g) p) where
+  type Diff ((f:*:g) p) = AffineDiffProductSpace f g p
+  (x:*:y) .+^ AffineDiffProductSpace ξ υ = (x.+^ξ) :*: (y.+^υ)
+  (x:*:y) .-. (ξ:*:υ) = AffineDiffProductSpace (x.-.ξ) (y.-.υ)
