@@ -1,6 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeOperators
            , TypeFamilies, UndecidableInstances, CPP
            , FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -38,6 +41,9 @@ import Data.Ratio
 import Data.AdditiveGroup
 import Data.MemoTrie
 
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
+
 infixr 7 *^
 
 -- | Vector space @v@.
@@ -45,6 +51,9 @@ class AdditiveGroup v => VectorSpace v where
   type Scalar v :: *
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v
+  default (*^) :: (Generic v, VectorSpace (Gnrx.Rep v ()))
+                    => Scalar (Gnrx.Rep v ()) -> v -> v
+  μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: Gnrx.Rep v ())
 
 infixr 7 <.>
 
@@ -215,3 +224,15 @@ instance InnerSpace a => InnerSpace (Maybe a) where
 --   mu <.> mv = fromMaybe zeroV (liftA2 (<.>) mu mv)
 
 --   (<.>) = (fmap.fmap) (fromMaybe zeroV) (liftA2 (<.>))
+
+
+instance VectorSpace a => VectorSpace (Gnrx.Rec0 a s) where
+  type Scalar (Gnrx.Rec0 a s) = Scalar a
+  μ *^ Gnrx.K1 v = Gnrx.K1 $ μ*^v
+instance VectorSpace (f p) => VectorSpace (Gnrx.M1 i c f p) where
+  type Scalar (Gnrx.M1 i c f p) = Scalar (f p)
+  μ *^ Gnrx.M1 v = Gnrx.M1 $ μ*^v
+instance (VectorSpace (f p), VectorSpace (g p), Scalar (f p) ~ Scalar (g p))
+         => VectorSpace ((f :*: g) p) where
+  type Scalar ((f:*:g) p) = Scalar (f p)
+  μ *^ (x:*:y) = μ*^x :*: μ*^y
