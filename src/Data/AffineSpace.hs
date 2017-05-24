@@ -28,6 +28,7 @@ import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CD
 import Control.Arrow(first)
 
 import Data.VectorSpace
+import Data.Basis
 
 import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
@@ -146,6 +147,34 @@ data AffineDiffProductSpace f g p = AffineDiffProductSpace
             !(Diff (f p)) !(Diff (g p)) deriving (Generic)
 instance (AffineSpace (f p), AffineSpace (g p))
     => AdditiveGroup (AffineDiffProductSpace f g p)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , VectorSpace (Diff (f p)), VectorSpace (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p)) )
+    => VectorSpace (AffineDiffProductSpace f g p)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , InnerSpace (Diff (f p)), InnerSpace (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p))
+         , Num (Scalar (Diff (f p))) )
+    => InnerSpace (AffineDiffProductSpace f g p)
+instance (AffineSpace (f p), AffineSpace (g p))
+    => AffineSpace (AffineDiffProductSpace f g p) where
+  type Diff (AffineDiffProductSpace f g p) = AffineDiffProductSpace f g p
+  (.+^) = (^+^)
+  (.-.) = (^-^)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , HasBasis (Diff (f p)), HasBasis (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p))
+         , Num (Scalar (Diff (f p))) )
+    => HasBasis (AffineDiffProductSpace f g p) where
+  type Basis (AffineDiffProductSpace f g p) = Either (Basis (Diff (f p)))
+                                                     (Basis (Diff (g p)))
+  basisValue (Left bf) = AffineDiffProductSpace (basisValue bf) zeroV
+  basisValue (Right bg) = AffineDiffProductSpace zeroV (basisValue bg)
+  decompose (AffineDiffProductSpace vf vg)
+        = map (first Left) (decompose vf) ++ map (first Right) (decompose vg)
+  decompose' (AffineDiffProductSpace vf _) (Left bf) = decompose' vf bf
+  decompose' (AffineDiffProductSpace _ vg) (Right bg) = decompose' vg bg
+
 
 instance AffineSpace a => AffineSpace (Gnrx.Rec0 a s) where
   type Diff (Gnrx.Rec0 a s) = Diff a
