@@ -49,6 +49,7 @@ infixr 7 *^
 -- | Vector space @v@.
 class AdditiveGroup v => VectorSpace v where
   type Scalar v :: *
+  type Scalar v = Scalar (Gnrx.Rep v ())
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v
   default (*^) :: (Generic v, VectorSpace (Gnrx.Rep v ()))
