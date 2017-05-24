@@ -61,6 +61,9 @@ infixr 7 <.>
 class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
+  default (<.>) :: (Generic v, InnerSpace (Gnrx.Rep v ()))
+                    => v -> v -> Scalar (Gnrx.Rep v ())
+  v<.>w = (Gnrx.from v :: Gnrx.Rep v ()) <.> Gnrx.from w
 
 infixr 7 ^/
 infixl 7 ^*
@@ -236,3 +239,12 @@ instance (VectorSpace (f p), VectorSpace (g p), Scalar (f p) ~ Scalar (g p))
          => VectorSpace ((f :*: g) p) where
   type Scalar ((f:*:g) p) = Scalar (f p)
   μ *^ (x:*:y) = μ*^x :*: μ*^y
+
+instance InnerSpace a => InnerSpace (Gnrx.Rec0 a s) where
+  Gnrx.K1 v <.> Gnrx.K1 w = v<.>w
+instance InnerSpace (f p) => InnerSpace (Gnrx.M1 i c f p) where
+  Gnrx.M1 v <.> Gnrx.M1 w = v<.>w
+instance ( InnerSpace (f p), InnerSpace (g p)
+         , Scalar (f p) ~ Scalar (g p), Num (Scalar (f p)) )
+         => InnerSpace ((f :*: g) p) where
+  (x:*:y) <.> (ξ:*:υ) = x<.>ξ + y<.>υ
