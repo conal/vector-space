@@ -149,6 +149,7 @@ newtype GenericDiff p = GenericDiff (Diff (Gnrx.Rep p ()))
 instance AdditiveGroup (Diff (Gnrx.Rep p ())) => AdditiveGroup (GenericDiff p)
 instance VectorSpace (Diff (Gnrx.Rep p ())) => VectorSpace (GenericDiff p)
 instance InnerSpace (Diff (Gnrx.Rep p ())) => InnerSpace (GenericDiff p)
+instance HasBasis (Diff (Gnrx.Rep p ())) => HasBasis (GenericDiff p)
 
 data AffineDiffProductSpace f g p = AffineDiffProductSpace
             !(Diff (f p)) !(Diff (g p)) deriving (Generic)
