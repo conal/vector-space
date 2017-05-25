@@ -50,19 +50,18 @@ infix  6 .-.
 class AdditiveGroup (Diff p) => AffineSpace p where
   -- | Associated vector space
   type Diff p
-  type Diff p = Diff (Gnrx.Rep p ())
+  type Diff p = GenericDiff p
   -- | Subtract points
   (.-.)  :: p -> p -> Diff p
-  default (.-.) :: ( Generic p, AffineSpace (Gnrx.Rep p ()), Generic (Diff p)
-                   , Gnrx.Rep (Diff p) () ~ Diff (Gnrx.Rep p ()) )
+  default (.-.) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (Gnrx.Rep p ()) )
               => p -> p -> Diff p
-  p .-. v = Gnrx.to (Gnrx.from p .-. (Gnrx.from v :: Gnrx.Rep p ()))
+  p .-. q = GenericDiff
+         $ (Gnrx.from p .-. (Gnrx.from q :: Gnrx.Rep p ()))
   -- | Point plus vector
   (.+^)  :: p -> Diff p -> p
-  default (.+^) :: ( Generic p, AffineSpace (Gnrx.Rep p ()), Generic (Diff p)
-                   , Gnrx.Rep (Diff p) () ~ Diff (Gnrx.Rep p ()) )
+  default (.+^) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (Gnrx.Rep p ()) )
               => p -> Diff p -> p
-  p .+^ v = Gnrx.to (Gnrx.from p .+^ Gnrx.from v :: Gnrx.Rep p ())
+  p .+^ GenericDiff q = Gnrx.to (Gnrx.from p .+^ q :: Gnrx.Rep p ())
 
 -- | Point minus vector
 (.-^) :: AffineSpace p => p -> Diff p -> p
@@ -143,6 +142,14 @@ instance (AffineSpace p) => AffineSpace (a -> p) where
   (.+^)              = liftA2 (.+^)
 
 
+
+newtype GenericDiff p = GenericDiff (Diff (Gnrx.Rep p ()))
+       deriving (Generic)
+
+instance AdditiveGroup (Diff (Gnrx.Rep p ())) => AdditiveGroup (GenericDiff p)
+instance VectorSpace (Diff (Gnrx.Rep p ())) => VectorSpace (GenericDiff p)
+instance InnerSpace (Diff (Gnrx.Rep p ())) => InnerSpace (GenericDiff p)
+
 data AffineDiffProductSpace f g p = AffineDiffProductSpace
             !(Diff (f p)) !(Diff (g p)) deriving (Generic)
 instance (AffineSpace (f p), AffineSpace (g p))
@@ -163,8 +170,7 @@ instance (AffineSpace (f p), AffineSpace (g p))
   (.-.) = (^-^)
 instance ( AffineSpace (f p), AffineSpace (g p)
          , HasBasis (Diff (f p)), HasBasis (Diff (g p))
-         , Scalar (Diff (f p)) ~ Scalar (Diff (g p))
-         , Num (Scalar (Diff (f p))) )
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p)) )
     => HasBasis (AffineDiffProductSpace f g p) where
   type Basis (AffineDiffProductSpace f g p) = Either (Basis (Diff (f p)))
                                                      (Basis (Diff (g p)))
