@@ -41,6 +41,7 @@ import Data.Ratio
 import Data.AdditiveGroup
 import Data.MemoTrie
 
+import Data.VectorSpace.Generic
 import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
 
@@ -49,12 +50,12 @@ infixr 7 *^
 -- | Vector space @v@.
 class AdditiveGroup v => VectorSpace v where
   type Scalar v :: *
-  type Scalar v = Scalar (Gnrx.Rep v ())
+  type Scalar v = Scalar (VRep v)
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v
-  default (*^) :: (Generic v, VectorSpace (Gnrx.Rep v ()))
-                    => Scalar (Gnrx.Rep v ()) -> v -> v
-  μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: Gnrx.Rep v ())
+  default (*^) :: (Generic v, VectorSpace (VRep v))
+                    => Scalar (VRep v) -> v -> v
+  μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: VRep v)
 
 infixr 7 <.>
 
@@ -62,9 +63,9 @@ infixr 7 <.>
 class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
-  default (<.>) :: (Generic v, InnerSpace (Gnrx.Rep v ()))
-                    => v -> v -> Scalar (Gnrx.Rep v ())
-  v<.>w = (Gnrx.from v :: Gnrx.Rep v ()) <.> Gnrx.from w
+  default (<.>) :: (Generic v, InnerSpace (VRep v))
+                    => v -> v -> Scalar (VRep v)
+  v<.>w = (Gnrx.from v :: VRep v) <.> Gnrx.from w
 
 infixr 7 ^/
 infixl 7 ^*

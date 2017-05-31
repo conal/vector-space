@@ -30,6 +30,7 @@ import Control.Arrow(first)
 import Data.VectorSpace
 import Data.Basis
 
+import Data.VectorSpace.Generic
 import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
 
@@ -53,15 +54,15 @@ class AdditiveGroup (Diff p) => AffineSpace p where
   type Diff p = GenericDiff p
   -- | Subtract points
   (.-.)  :: p -> p -> Diff p
-  default (.-.) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (Gnrx.Rep p ()) )
+  default (.-.) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (VRep p) )
               => p -> p -> Diff p
   p .-. q = GenericDiff
-         $ (Gnrx.from p .-. (Gnrx.from q :: Gnrx.Rep p ()))
+         $ (Gnrx.from p .-. (Gnrx.from q :: VRep p))
   -- | Point plus vector
   (.+^)  :: p -> Diff p -> p
-  default (.+^) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (Gnrx.Rep p ()) )
+  default (.+^) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (VRep p) )
               => p -> Diff p -> p
-  p .+^ GenericDiff q = Gnrx.to (Gnrx.from p .+^ q :: Gnrx.Rep p ())
+  p .+^ GenericDiff q = Gnrx.to (Gnrx.from p .+^ q :: VRep p)
 
 -- | Point minus vector
 (.-^) :: AffineSpace p => p -> Diff p -> p
@@ -143,13 +144,13 @@ instance (AffineSpace p) => AffineSpace (a -> p) where
 
 
 
-newtype GenericDiff p = GenericDiff (Diff (Gnrx.Rep p ()))
+newtype GenericDiff p = GenericDiff (Diff (VRep p))
        deriving (Generic)
 
-instance AdditiveGroup (Diff (Gnrx.Rep p ())) => AdditiveGroup (GenericDiff p)
-instance VectorSpace (Diff (Gnrx.Rep p ())) => VectorSpace (GenericDiff p)
-instance InnerSpace (Diff (Gnrx.Rep p ())) => InnerSpace (GenericDiff p)
-instance HasBasis (Diff (Gnrx.Rep p ())) => HasBasis (GenericDiff p)
+instance AdditiveGroup (Diff (VRep p)) => AdditiveGroup (GenericDiff p)
+instance VectorSpace (Diff (VRep p)) => VectorSpace (GenericDiff p)
+instance InnerSpace (Diff (VRep p)) => InnerSpace (GenericDiff p)
+instance HasBasis (Diff (VRep p)) => HasBasis (GenericDiff p)
 
 data AffineDiffProductSpace f g p = AffineDiffProductSpace
             !(Diff (f p)) !(Diff (g p)) deriving (Generic)

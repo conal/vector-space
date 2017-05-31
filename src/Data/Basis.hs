@@ -27,6 +27,7 @@ import Foreign.C.Types (CFloat, CDouble)
 
 import Data.VectorSpace
 
+import Data.VectorSpace.Generic
 import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
 
@@ -36,23 +37,23 @@ import GHC.Generics (Generic, (:*:)(..))
 class VectorSpace v => HasBasis v where
   -- | Representation of the canonical basis for @v@
   type Basis v :: *
-  type Basis v = Basis (Gnrx.Rep v ())
+  type Basis v = Basis (VRep v)
   -- | Interpret basis rep as a vector
   basisValue   :: Basis v -> v
-  default basisValue :: (Generic v, HasBasis (Gnrx.Rep v ()))
-                    => Basis (Gnrx.Rep v ()) -> v
-  basisValue b = Gnrx.to (basisValue b :: Gnrx.Rep v ())
+  default basisValue :: (Generic v, HasBasis (VRep v))
+                    => Basis (VRep v) -> v
+  basisValue b = Gnrx.to (basisValue b :: VRep v)
   -- | Extract coordinates
   decompose    :: v -> [(Basis v, Scalar v)]
-  default decompose :: (Generic v, HasBasis (Gnrx.Rep v ()))
-                    => v -> [(Basis (Gnrx.Rep v ()), Scalar (Gnrx.Rep v ()))]
-  decompose v = decompose (Gnrx.from v :: Gnrx.Rep v ())
+  default decompose :: (Generic v, HasBasis (VRep v))
+                    => v -> [(Basis (VRep v), Scalar (VRep v))]
+  decompose v = decompose (Gnrx.from v :: VRep v)
   -- | Experimental version.  More elegant definitions, and friendly to
   -- infinite-dimensional vector spaces.
   decompose'   :: v -> (Basis v -> Scalar v)
-  default decompose' :: (Generic v, HasBasis (Gnrx.Rep v ()))
-                    => v -> Basis (Gnrx.Rep v ()) -> Scalar (Gnrx.Rep v ())
-  decompose' v = decompose' (Gnrx.from v :: Gnrx.Rep v ())
+  default decompose' :: (Generic v, HasBasis (VRep v))
+                    => v -> Basis (VRep v) -> Scalar (VRep v)
+  decompose' v = decompose' (Gnrx.from v :: VRep v)
 
 -- Defining property: recompose . decompose == id
 

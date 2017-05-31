@@ -44,6 +44,8 @@ Library
                      Data.Derivative
                      Data.Cross
                      Data.AffineSpace
+  Other-Modules:     
+                     Data.VectorSpace.Generic
 
 
   -- This library relies on type families working as well as in 6.10.
