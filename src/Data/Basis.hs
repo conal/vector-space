@@ -40,19 +40,21 @@ class VectorSpace v => HasBasis v where
   type Basis v = Basis (VRep v)
   -- | Interpret basis rep as a vector
   basisValue   :: Basis v -> v
-  default basisValue :: (Generic v, HasBasis (VRep v))
-                    => Basis (VRep v) -> v
+  default basisValue :: (Generic v, HasBasis (VRep v), Basis (VRep v) ~ Basis v)
+                    => Basis v -> v
   basisValue b = Gnrx.to (basisValue b :: VRep v)
   -- | Extract coordinates
   decompose    :: v -> [(Basis v, Scalar v)]
-  default decompose :: (Generic v, HasBasis (VRep v))
-                    => v -> [(Basis (VRep v), Scalar (VRep v))]
+  default decompose :: ( Generic v, HasBasis (VRep v)
+                       , Scalar (VRep v) ~ Scalar v, Basis (VRep v) ~ Basis v )
+                    => v -> [(Basis v, Scalar v)]
   decompose v = decompose (Gnrx.from v :: VRep v)
   -- | Experimental version.  More elegant definitions, and friendly to
   -- infinite-dimensional vector spaces.
   decompose'   :: v -> (Basis v -> Scalar v)
-  default decompose' :: (Generic v, HasBasis (VRep v))
-                    => v -> Basis (VRep v) -> Scalar (VRep v)
+  default decompose' :: ( Generic v, HasBasis (VRep v)
+                        , Scalar (VRep v) ~ Scalar v, Basis (VRep v) ~ Basis v )
+                    => v -> Basis v -> Scalar v
   decompose' v = decompose' (Gnrx.from v :: VRep v)
 
 -- Defining property: recompose . decompose == id

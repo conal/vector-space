@@ -53,8 +53,8 @@ class AdditiveGroup v => VectorSpace v where
   type Scalar v = Scalar (VRep v)
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v
-  default (*^) :: (Generic v, VectorSpace (VRep v))
-                    => Scalar (VRep v) -> v -> v
+  default (*^) :: (Generic v, VectorSpace (VRep v), Scalar (VRep v) ~ Scalar v)
+                    => Scalar v -> v -> v
   μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: VRep v)
 
 infixr 7 <.>
@@ -63,8 +63,8 @@ infixr 7 <.>
 class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
-  default (<.>) :: (Generic v, InnerSpace (VRep v))
-                    => v -> v -> Scalar (VRep v)
+  default (<.>) :: (Generic v, InnerSpace (VRep v), Scalar (VRep v) ~ Scalar v)
+                    => v -> v -> Scalar v
   v<.>w = (Gnrx.from v :: VRep v) <.> Gnrx.from w
 
 infixr 7 ^/
