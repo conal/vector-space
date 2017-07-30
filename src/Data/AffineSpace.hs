@@ -1,4 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleContexts, TypeFamilies, CPP #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveGeneric        #-}
 ----------------------------------------------------------------------
 -- |
 -- Module      :  Data.AffineSpace
@@ -22,6 +28,11 @@ import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CD
 import Control.Arrow(first)
 
 import Data.VectorSpace
+import Data.Basis
+
+import Data.VectorSpace.Generic
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
 
 -- Through 0.8.4, I used the following fixities.
 -- 
@@ -40,10 +51,18 @@ infix  6 .-.
 class AdditiveGroup (Diff p) => AffineSpace p where
   -- | Associated vector space
   type Diff p
+  type Diff p = GenericDiff p
   -- | Subtract points
   (.-.)  :: p -> p -> Diff p
+  default (.-.) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (VRep p) )
+              => p -> p -> Diff p
+  p .-. q = GenericDiff
+         $ (Gnrx.from p .-. (Gnrx.from q :: VRep p))
   -- | Point plus vector
   (.+^)  :: p -> Diff p -> p
+  default (.+^) :: ( Generic p, Diff p ~ GenericDiff p, AffineSpace (VRep p) )
+              => p -> Diff p -> p
+  p .+^ GenericDiff q = Gnrx.to (Gnrx.from p .+^ q :: VRep p)
 
 -- | Point minus vector
 (.-^) :: AffineSpace p => p -> Diff p -> p
@@ -122,3 +141,58 @@ instance (AffineSpace p) => AffineSpace (a -> p) where
   type Diff (a -> p) = a -> Diff p
   (.-.)              = liftA2 (.-.)
   (.+^)              = liftA2 (.+^)
+
+
+
+newtype GenericDiff p = GenericDiff (Diff (VRep p))
+       deriving (Generic)
+
+instance AdditiveGroup (Diff (VRep p)) => AdditiveGroup (GenericDiff p)
+instance VectorSpace (Diff (VRep p)) => VectorSpace (GenericDiff p)
+instance InnerSpace (Diff (VRep p)) => InnerSpace (GenericDiff p)
+instance HasBasis (Diff (VRep p)) => HasBasis (GenericDiff p)
+
+data AffineDiffProductSpace f g p = AffineDiffProductSpace
+            !(Diff (f p)) !(Diff (g p)) deriving (Generic)
+instance (AffineSpace (f p), AffineSpace (g p))
+    => AdditiveGroup (AffineDiffProductSpace f g p)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , VectorSpace (Diff (f p)), VectorSpace (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p)) )
+    => VectorSpace (AffineDiffProductSpace f g p)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , InnerSpace (Diff (f p)), InnerSpace (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p))
+         , Num (Scalar (Diff (f p))) )
+    => InnerSpace (AffineDiffProductSpace f g p)
+instance (AffineSpace (f p), AffineSpace (g p))
+    => AffineSpace (AffineDiffProductSpace f g p) where
+  type Diff (AffineDiffProductSpace f g p) = AffineDiffProductSpace f g p
+  (.+^) = (^+^)
+  (.-.) = (^-^)
+instance ( AffineSpace (f p), AffineSpace (g p)
+         , HasBasis (Diff (f p)), HasBasis (Diff (g p))
+         , Scalar (Diff (f p)) ~ Scalar (Diff (g p)) )
+    => HasBasis (AffineDiffProductSpace f g p) where
+  type Basis (AffineDiffProductSpace f g p) = Either (Basis (Diff (f p)))
+                                                     (Basis (Diff (g p)))
+  basisValue (Left bf) = AffineDiffProductSpace (basisValue bf) zeroV
+  basisValue (Right bg) = AffineDiffProductSpace zeroV (basisValue bg)
+  decompose (AffineDiffProductSpace vf vg)
+        = map (first Left) (decompose vf) ++ map (first Right) (decompose vg)
+  decompose' (AffineDiffProductSpace vf _) (Left bf) = decompose' vf bf
+  decompose' (AffineDiffProductSpace _ vg) (Right bg) = decompose' vg bg
+
+
+instance AffineSpace a => AffineSpace (Gnrx.Rec0 a s) where
+  type Diff (Gnrx.Rec0 a s) = Diff a
+  Gnrx.K1 v .+^ w = Gnrx.K1 $ v .+^ w
+  Gnrx.K1 v .-. Gnrx.K1 w = v .-. w
+instance AffineSpace (f p) => AffineSpace (Gnrx.M1 i c f p) where
+  type Diff (Gnrx.M1 i c f p) = Diff (f p)
+  Gnrx.M1 v .+^ w = Gnrx.M1 $ v .+^ w
+  Gnrx.M1 v .-. Gnrx.M1 w = v .-. w
+instance (AffineSpace (f p), AffineSpace (g p)) => AffineSpace ((f :*: g) p) where
+  type Diff ((f:*:g) p) = AffineDiffProductSpace f g p
+  (x:*:y) .+^ AffineDiffProductSpace ξ υ = (x.+^ξ) :*: (y.+^υ)
+  (x:*:y) .-. (ξ:*:υ) = AffineDiffProductSpace (x.-.ξ) (y.-.υ)

@@ -1,6 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeOperators
            , TypeFamilies, UndecidableInstances, CPP
            , FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
 -- |
@@ -38,13 +41,21 @@ import Data.Ratio
 import Data.AdditiveGroup
 import Data.MemoTrie
 
+import Data.VectorSpace.Generic
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
+
 infixr 7 *^
 
 -- | Vector space @v@.
 class AdditiveGroup v => VectorSpace v where
   type Scalar v :: *
+  type Scalar v = Scalar (VRep v)
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v
+  default (*^) :: (Generic v, VectorSpace (VRep v), Scalar (VRep v) ~ Scalar v)
+                    => Scalar v -> v -> v
+  μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: VRep v)
 
 infixr 7 <.>
 
@@ -52,6 +63,9 @@ infixr 7 <.>
 class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   -- | Inner/dot product
   (<.>) :: v -> v -> Scalar v
+  default (<.>) :: (Generic v, InnerSpace (VRep v), Scalar (VRep v) ~ Scalar v)
+                    => v -> v -> Scalar v
+  v<.>w = (Gnrx.from v :: VRep v) <.> Gnrx.from w
 
 infixr 7 ^/
 infixl 7 ^*
@@ -215,3 +229,24 @@ instance InnerSpace a => InnerSpace (Maybe a) where
 --   mu <.> mv = fromMaybe zeroV (liftA2 (<.>) mu mv)
 
 --   (<.>) = (fmap.fmap) (fromMaybe zeroV) (liftA2 (<.>))
+
+
+instance VectorSpace a => VectorSpace (Gnrx.Rec0 a s) where
+  type Scalar (Gnrx.Rec0 a s) = Scalar a
+  μ *^ Gnrx.K1 v = Gnrx.K1 $ μ*^v
+instance VectorSpace (f p) => VectorSpace (Gnrx.M1 i c f p) where
+  type Scalar (Gnrx.M1 i c f p) = Scalar (f p)
+  μ *^ Gnrx.M1 v = Gnrx.M1 $ μ*^v
+instance (VectorSpace (f p), VectorSpace (g p), Scalar (f p) ~ Scalar (g p))
+         => VectorSpace ((f :*: g) p) where
+  type Scalar ((f:*:g) p) = Scalar (f p)
+  μ *^ (x:*:y) = μ*^x :*: μ*^y
+
+instance InnerSpace a => InnerSpace (Gnrx.Rec0 a s) where
+  Gnrx.K1 v <.> Gnrx.K1 w = v<.>w
+instance InnerSpace (f p) => InnerSpace (Gnrx.M1 i c f p) where
+  Gnrx.M1 v <.> Gnrx.M1 w = v<.>w
+instance ( InnerSpace (f p), InnerSpace (g p)
+         , Scalar (f p) ~ Scalar (g p), Num (Scalar (f p)) )
+         => InnerSpace ((f :*: g) p) where
+  (x:*:y) <.> (ξ:*:υ) = x<.>ξ + y<.>υ

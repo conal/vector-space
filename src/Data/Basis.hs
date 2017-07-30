@@ -1,5 +1,8 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, UndecidableInstances
   , FlexibleInstances, MultiParamTypeClasses, CPP  #-}
+{-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
 {-# OPTIONS_GHC -Wall -fno-warn-orphans #-}
 ----------------------------------------------------------------------
 -- |
@@ -24,19 +27,35 @@ import Foreign.C.Types (CFloat, CDouble)
 
 import Data.VectorSpace
 
+import Data.VectorSpace.Generic
+import qualified GHC.Generics as Gnrx
+import GHC.Generics (Generic, (:*:)(..))
+
 -- using associated data type instead of associated type synonym to work
 -- around ghc bug <http://hackage.haskell.org/trac/ghc/ticket/3038>
 
 class VectorSpace v => HasBasis v where
   -- | Representation of the canonical basis for @v@
   type Basis v :: *
+  type Basis v = Basis (VRep v)
   -- | Interpret basis rep as a vector
   basisValue   :: Basis v -> v
+  default basisValue :: (Generic v, HasBasis (VRep v), Basis (VRep v) ~ Basis v)
+                    => Basis v -> v
+  basisValue b = Gnrx.to (basisValue b :: VRep v)
   -- | Extract coordinates
   decompose    :: v -> [(Basis v, Scalar v)]
+  default decompose :: ( Generic v, HasBasis (VRep v)
+                       , Scalar (VRep v) ~ Scalar v, Basis (VRep v) ~ Basis v )
+                    => v -> [(Basis v, Scalar v)]
+  decompose v = decompose (Gnrx.from v :: VRep v)
   -- | Experimental version.  More elegant definitions, and friendly to
   -- infinite-dimensional vector spaces.
   decompose'   :: v -> (Basis v -> Scalar v)
+  default decompose' :: ( Generic v, HasBasis (VRep v)
+                        , Scalar (VRep v) ~ Scalar v, Basis (VRep v) ~ Basis v )
+                    => v -> Basis v -> Scalar v
+  decompose' v = decompose' (Gnrx.from v :: VRep v)
 
 -- Defining property: recompose . decompose == id
 
@@ -131,3 +150,21 @@ t3 = basisValue (Right ()) :: (Float,Double)
 t4 = basisValue (Right (Left ())) :: (Float,Double,Float)
 
 -}
+
+instance HasBasis a => HasBasis (Gnrx.Rec0 a s) where
+  type Basis (Gnrx.Rec0 a s) = Basis a
+  basisValue = Gnrx.K1 . basisValue
+  decompose = decompose . Gnrx.unK1
+  decompose' = decompose' . Gnrx.unK1
+instance HasBasis (f p) => HasBasis (Gnrx.M1 i c f p) where
+  type Basis (Gnrx.M1 i c f p) = Basis (f p)
+  basisValue = Gnrx.M1 . basisValue
+  decompose = decompose . Gnrx.unM1
+  decompose' = decompose' . Gnrx.unM1
+instance (HasBasis (f p), HasBasis (g p), Scalar (f p) ~ Scalar (g p))
+         => HasBasis ((f :*: g) p) where
+  type Basis ((f:*:g) p) = Either (Basis (f p)) (Basis (g p))
+  basisValue (Left bf) = basisValue bf :*: zeroV
+  basisValue (Right bg) = zeroV :*: basisValue bg
+  decompose  (u:*:v)     = decomp2 Left u ++ decomp2 Right v
+  decompose' (u:*:v)     = decompose' u `either` decompose' v
