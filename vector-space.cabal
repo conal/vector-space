@@ -55,6 +55,9 @@ Library
   if !impl(ghc >= 7.9) {
     Build-Depends: void >= 0.4
   }
+  if !impl(ghc >= 8.0) {
+    Build-Depends: semigroups >= 0.16
+  }
   ghc-options:         -Wall -O2
 --  ghc-prof-options:    -prof -auto-all 
 
