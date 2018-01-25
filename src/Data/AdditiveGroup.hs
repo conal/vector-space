@@ -31,6 +31,9 @@ import Data.Foldable (Foldable)
 import Data.Foldable (foldr)
 import Data.Complex hiding (magnitude)
 import Data.Ratio
+#if !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup (Semigroup(..))
+#endif
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 
 import Data.MemoTrie
@@ -187,10 +190,14 @@ instance Applicative Sum where
   pure  = Sum
   (<*>) = inSum2 ($)
 
+instance AdditiveGroup a => Semigroup (Sum a) where
+  (<>) = liftA2 (^+^)
+
 instance AdditiveGroup a => Monoid (Sum a) where
   mempty  = Sum zeroV
-  mappend = liftA2 (^+^)
-
+#if !(MIN_VERSION_base(4,11,0))
+  mappend = (<>)
+#endif
 
 -- | Application a unary function inside a 'Sum'
 inSum :: (a -> b) -> (Sum a -> Sum b)
