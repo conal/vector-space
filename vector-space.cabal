@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.13
+Version:             0.14
 Cabal-Version:       >= 1.8
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
@@ -47,21 +47,9 @@ Library
   Other-Modules:     
                      Data.VectorSpace.Generic
 
-
   -- This library relies on type families working as well as in 6.10.
-  if impl(ghc < 6.10) {
-    buildable: False
-  }
-  if !impl(ghc >= 7.6) {
-    Build-Depends: ghc-prim >= 0.2
-  }
-  if !impl(ghc >= 7.9) {
-    Build-Depends: void >= 0.4
-  }
-  if !impl(ghc >= 8.0) {
-    Build-Depends: semigroups >= 0.16
-  }
+  if  impl(ghc < 6.10) { buildable: False }
+  if !impl(ghc >= 7.6) { Build-Depends: ghc-prim >= 0.2 }
+  if !impl(ghc >= 7.9) { Build-Depends: void >= 0.4 }
+  if !impl(ghc >= 8.0) { Build-Depends: semigroups >= 0.16 }
   ghc-options:         -Wall -O2
---  ghc-prof-options:    -prof -auto-all 
-
--- For ghc-options: -ddump-simpl-stats -ddump-rules -ddump-simpl -ddump-simpl-phases
