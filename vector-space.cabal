@@ -1,6 +1,6 @@
 Name:                vector-space
 Version:             0.13
-Cabal-Version:       >= 1.6
+Cabal-Version:       >= 1.8
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
 Description:
@@ -51,6 +51,9 @@ Library
   -- This library relies on type families working as well as in 6.10.
   if impl(ghc < 6.10) {
     buildable: False
+  }
+  if !impl(ghc >= 7.6) {
+    Build-Depends: ghc-prim >= 0.2
   }
   if !impl(ghc >= 7.9) {
     Build-Depends: void >= 0.4
