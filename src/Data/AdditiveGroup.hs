@@ -8,15 +8,15 @@
 -- Module      :   Data.AdditiveGroup
 -- Copyright   :  (c) Conal Elliott and Andy J Gill 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net, andygill@ku.edu
 -- Stability   :  experimental
--- 
+--
 -- Groups: zero, addition, and negation (additive inverse)
 ----------------------------------------------------------------------
 
 module Data.AdditiveGroup
-  ( 
+  (
     AdditiveGroup(..), sumV
   , Sum(..), inSum, inSum2
   ) where
@@ -50,14 +50,17 @@ class AdditiveGroup v where
   zeroV :: v
   default zeroV :: (Generic v, AdditiveGroup (VRep v)) => v
   zeroV = Gnrx.to (zeroV :: VRep v)
+  {-# INLINE zeroV #-}
   -- | Add vectors
   (^+^) :: v -> v -> v
   default (^+^) :: (Generic v, AdditiveGroup (VRep v)) => v -> v -> v
   v ^+^ v' = Gnrx.to (Gnrx.from v ^+^ Gnrx.from v' :: VRep v)
+  {-# INLINE (^+^) #-}
   -- | Additive inverse
   negateV :: v -> v
   default negateV :: (Generic v, AdditiveGroup (VRep v)) => v -> v
   negateV v = Gnrx.to (negateV $ Gnrx.from v :: VRep v)
+  {-# INLINE negateV #-}
   -- | Group subtraction
   (^-^) :: v -> v -> v
   v ^-^ v' = v ^+^ negateV v'
@@ -65,6 +68,7 @@ class AdditiveGroup v where
 -- | Sum over several vectors
 sumV :: (Foldable f, AdditiveGroup v) => f v -> v
 sumV = foldr (^+^) zeroV
+{-# INLINE sumV #-}
 
 instance AdditiveGroup () where
   zeroV     = ()
@@ -72,7 +76,7 @@ instance AdditiveGroup () where
   negateV   = id
 
 -- For 'Num' types:
--- 
+--
 -- instance AdditiveGroup n where {zeroV=0; (^+^) = (+); negateV = negate}
 
 #define ScalarTypeCon(con,t) \
@@ -181,6 +185,7 @@ newtype Sum a = Sum { getSum :: a }
 
 instance Functor Sum where
   fmap f (Sum a) = Sum (f a)
+  {-# INLINE fmap #-}
 
 -- instance Applicative Sum where
 --   pure a = Sum a
@@ -188,10 +193,13 @@ instance Functor Sum where
 
 instance Applicative Sum where
   pure  = Sum
+  {-# INLINE pure #-}
   (<*>) = inSum2 ($)
+  {-# INLINE (<*>) #-}
 
 instance AdditiveGroup a => Semigroup (Sum a) where
   (<>) = liftA2 (^+^)
+  {-# INLINE (<>) #-}
 
 instance AdditiveGroup a => Monoid (Sum a) where
   mempty  = Sum zeroV
@@ -202,22 +210,23 @@ instance AdditiveGroup a => Monoid (Sum a) where
 -- | Application a unary function inside a 'Sum'
 inSum :: (a -> b) -> (Sum a -> Sum b)
 inSum = getSum ~> Sum
+{-# INLINE inSum #-}
 
 -- | Application a binary function inside a 'Sum'
 inSum2 :: (a -> b -> c) -> (Sum a -> Sum b -> Sum c)
 inSum2 = getSum ~> inSum
-
+{-# INLINE inSum2 #-}
 
 instance AdditiveGroup a => AdditiveGroup (Sum a) where
-  zeroV   = mempty
-  (^+^)   = mappend
+  zeroV   = Sum zeroV
+  (^+^)   = (<>)
   negateV = inSum negateV
-
 
 ---- to go elsewhere
 
 (~>) :: (a' -> a) -> (b -> b') -> ((a -> b) -> (a' -> b'))
 (i ~> o) f = o . f . i
+{-# INLINE (~>) #-}
 
 -- result :: (b -> b') -> ((a -> b) -> (a -> b'))
 -- result = (.)
@@ -231,16 +240,28 @@ instance AdditiveGroup a => AdditiveGroup (Sum a) where
 
 instance AdditiveGroup a => AdditiveGroup (Gnrx.Rec0 a s) where
   zeroV = Gnrx.K1 zeroV
+  {-# INLINE zeroV #-}
   negateV (Gnrx.K1 v) = Gnrx.K1 $ negateV v
+  {-# INLINE negateV #-}
   Gnrx.K1 v ^+^ Gnrx.K1 w = Gnrx.K1 $ v ^+^ w
+  {-# INLINE (^+^) #-}
   Gnrx.K1 v ^-^ Gnrx.K1 w = Gnrx.K1 $ v ^-^ w
+  {-# INLINE (^-^) #-}
 instance AdditiveGroup (f p) => AdditiveGroup (Gnrx.M1 i c f p) where
   zeroV = Gnrx.M1 zeroV
+  {-# INLINE zeroV #-}
   negateV (Gnrx.M1 v) = Gnrx.M1 $ negateV v
+  {-# INLINE negateV #-}
   Gnrx.M1 v ^+^ Gnrx.M1 w = Gnrx.M1 $ v ^+^ w
+  {-# INLINE (^+^) #-}
   Gnrx.M1 v ^-^ Gnrx.M1 w = Gnrx.M1 $ v ^-^ w
+  {-# INLINE (^-^) #-}
 instance (AdditiveGroup (f p), AdditiveGroup (g p)) => AdditiveGroup ((f :*: g) p) where
   zeroV = zeroV :*: zeroV
+  {-# INLINE zeroV #-}
   negateV (x:*:y) = negateV x :*: negateV y
+  {-# INLINE negateV #-}
   (x:*:y) ^+^ (ξ:*:υ) = (x^+^ξ) :*: (y^+^υ)
+  {-# INLINE (^+^) #-}
   (x:*:y) ^-^ (ξ:*:υ) = (x^-^ξ) :*: (y^-^υ)
+  {-# INLINE (^-^) #-}

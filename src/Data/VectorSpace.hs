@@ -10,12 +10,12 @@
 -- Module      :   Data.VectorSpace
 -- Copyright   :  (c) Conal Elliott and Andy J Gill 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net, andygill@ku.edu
 -- Stability   :  experimental
--- 
+--
 -- Vector spaces
--- 
+--
 -- This version uses associated types instead of fundeps and
 -- requires ghc-6.10 or later
 ----------------------------------------------------------------------
@@ -23,7 +23,7 @@
 -- NB: I'm attempting to replace fundeps with associated types.  See
 -- NewVectorSpace.hs.  Ran into trouble with type equality constraints not
 -- getting propagated.  Manuel Ch is looking into it.
--- 
+--
 -- Blocking bug: http://hackage.haskell.org/trac/ghc/ticket/2448
 
 module Data.VectorSpace
@@ -56,6 +56,7 @@ class AdditiveGroup v => VectorSpace v where
   default (*^) :: (Generic v, VectorSpace (VRep v), Scalar (VRep v) ~ Scalar v)
                     => Scalar v -> v -> v
   μ *^ v = Gnrx.to (μ *^ Gnrx.from v :: VRep v)
+  {-# INLINE (*^) #-}
 
 infixr 7 <.>
 
@@ -66,45 +67,54 @@ class (VectorSpace v, AdditiveGroup (Scalar v)) => InnerSpace v where
   default (<.>) :: (Generic v, InnerSpace (VRep v), Scalar (VRep v) ~ Scalar v)
                     => v -> v -> Scalar v
   v<.>w = (Gnrx.from v :: VRep v) <.> Gnrx.from w
+  {-# INLINE (<.>) #-}
 
 infixr 7 ^/
 infixl 7 ^*
 
 -- | Vector divided by scalar
 (^/) :: (VectorSpace v, s ~ Scalar v, Fractional s) => v -> s -> v
-v ^/ s = (1/s) *^ v
+v ^/ s = recip s *^ v
+{-# INLINE (^/) #-}
 
 -- | Vector multiplied by scalar
 (^*) :: (VectorSpace v, s ~ Scalar v) => v -> s -> v
 (^*) = flip (*^)
+{-# INLINE (^*) #-}
 
 -- | Linear interpolation between @a@ (when @t==0@) and @b@ (when @t==1@).
 
 -- lerp :: (VectorSpace v, s ~ Scalar v, Num s) => v -> v -> s -> v
 lerp :: VectorSpace v => v -> v -> Scalar v -> v
 lerp a b t = a ^+^ t *^ (b ^-^ a)
+{-# INLINE lerp #-}
 
 -- | Linear combination of vectors
 linearCombo :: VectorSpace v => [(v,Scalar v)] -> v
 linearCombo ps = sumV [v ^* s | (v,s) <- ps]
+{-# INLINE linearCombo #-}
 
 -- | Square of the length of a vector.  Sometimes useful for efficiency.
 -- See also 'magnitude'.
 magnitudeSq :: (InnerSpace v, s ~ Scalar v) => v -> s
 magnitudeSq v = v <.> v
+{-# INLINE magnitudeSq #-}
 
 -- | Length of a vector.   See also 'magnitudeSq'.
 magnitude :: (InnerSpace v, s ~ Scalar v, Floating s) =>  v -> s
 magnitude = sqrt . magnitudeSq
+{-# INLINE magnitude #-}
 
 -- | Vector in same direction as given one but with length of one.  If
 -- given the zero vector, then return it.
 normalized :: (InnerSpace v, s ~ Scalar v, Floating s) =>  v -> v
 normalized v = v ^/ magnitude v
+{-# INLINE normalized #-}
 
 -- | @project u v@ computes the projection of @v@ onto @u@.
 project :: (InnerSpace v, s ~ Scalar v, Fractional s) => v -> v -> v
 project u v = ((v <.> u) / magnitudeSq u) *^ u
+{-# INLINE project #-}
 
 #define ScalarType(t) \
   instance VectorSpace (t) where \
@@ -234,19 +244,25 @@ instance InnerSpace a => InnerSpace (Maybe a) where
 instance VectorSpace a => VectorSpace (Gnrx.Rec0 a s) where
   type Scalar (Gnrx.Rec0 a s) = Scalar a
   μ *^ Gnrx.K1 v = Gnrx.K1 $ μ*^v
+  {-# INLINE (*^) #-}
 instance VectorSpace (f p) => VectorSpace (Gnrx.M1 i c f p) where
   type Scalar (Gnrx.M1 i c f p) = Scalar (f p)
   μ *^ Gnrx.M1 v = Gnrx.M1 $ μ*^v
+  {-# INLINE (*^) #-}
 instance (VectorSpace (f p), VectorSpace (g p), Scalar (f p) ~ Scalar (g p))
          => VectorSpace ((f :*: g) p) where
   type Scalar ((f:*:g) p) = Scalar (f p)
   μ *^ (x:*:y) = μ*^x :*: μ*^y
+  {-# INLINE (*^) #-}
 
 instance InnerSpace a => InnerSpace (Gnrx.Rec0 a s) where
   Gnrx.K1 v <.> Gnrx.K1 w = v<.>w
+  {-# INLINE (<.>) #-}
 instance InnerSpace (f p) => InnerSpace (Gnrx.M1 i c f p) where
   Gnrx.M1 v <.> Gnrx.M1 w = v<.>w
+  {-# INLINE (<.>) #-}
 instance ( InnerSpace (f p), InnerSpace (g p)
          , Scalar (f p) ~ Scalar (g p), Num (Scalar (f p)) )
          => InnerSpace ((f :*: g) p) where
   (x:*:y) <.> (ξ:*:υ) = x<.>ξ + y<.>υ
+  {-# INLINE (<.>) #-}
