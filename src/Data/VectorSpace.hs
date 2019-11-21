@@ -105,8 +105,8 @@ magnitude :: (InnerSpace v, s ~ Scalar v, Floating s) =>  v -> s
 magnitude = sqrt . magnitudeSq
 {-# INLINE magnitude #-}
 
--- | Vector in same direction as given one but with length of one.  If
--- given the zero vector, then return it.
+-- | Vector in same direction as given one but with length of one.
+-- Divides by zero for the zero vector.
 normalized :: (InnerSpace v, s ~ Scalar v, Floating s) =>  v -> v
 normalized v = v ^/ magnitude v
 {-# INLINE normalized #-}
