@@ -21,6 +21,7 @@ module Data.Basis (HasBasis(..), linearCombo, recompose) where
 
 -- import Control.Applicative ((<$>))
 import Control.Arrow (first)
+import Data.MemoTrie
 import Data.Ratio
 import Foreign.C.Types (CFloat, CDouble)
 -- import Data.Either
@@ -114,6 +115,19 @@ unnest3 (a,(b,c)) = (a,b,c)
 
 nest3 :: (a,b,c) -> (a,(b,c))
 nest3 (a,b,c) = (a,(b,c))
+
+
+instance (HasBasis v, AdditiveGroup (Scalar v)) => HasBasis (Maybe v) where
+  type Basis (Maybe v) = Basis v
+  basisValue = Just . basisValue
+  decompose = maybe [] decompose
+  decompose' = maybe (const zeroV) decompose'
+
+instance (Eq a, HasTrie a, HasBasis v) => HasBasis (a :->: v) where
+  type Basis (a :->: v) = (a, Basis v)
+  basisValue (a, b) = trie $ \a' -> if a == a' then basisValue b else zeroV
+  decompose t = [((a, b), w) | (a, v) <- enumerate t, (b, w) <- decompose v]
+  decompose' t (a, b) = decompose' (untrie t a) b
 
 
 -- instance (Eq a, HasBasis u) => HasBasis (a -> u) where
