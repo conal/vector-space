@@ -32,11 +32,13 @@ module Data.VectorSpace
   , InnerSpace(..)
   , lerp, linearCombo, magnitudeSq, magnitude, normalized, project
   ) where
-
+#if !(MIN_VERSION_base(4,8,0))
 import Control.Applicative (liftA2)
+#endif
 import Data.Complex hiding (magnitude)
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Data.Ratio
+import Data.Kind
 
 import Data.AdditiveGroup
 import Data.MemoTrie
@@ -49,7 +51,7 @@ infixr 7 *^
 
 -- | Vector space @v@.
 class AdditiveGroup v => VectorSpace v where
-  type Scalar v :: *
+  type Scalar v :: Type
   type Scalar v = Scalar (VRep v)
   -- | Scale a vector
   (*^) :: Scalar v -> v -> v

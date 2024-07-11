@@ -25,9 +25,9 @@ module Data.LinearMap
   where
 
 #if !(MIN_VERSION_base(4,8,0))
-import Control.Applicative (Applicative)
+import Control.Applicative (Applicative, liftA2)
 #endif
-import Control.Applicative (liftA2, liftA3)
+import Control.Applicative (liftA3)
 import Control.Arrow       (first,second)
 
 import Data.MemoTrie      (HasTrie(..),(:->:))
