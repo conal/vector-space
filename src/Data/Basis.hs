@@ -23,6 +23,7 @@ module Data.Basis (HasBasis(..), linearCombo, recompose) where
 import Control.Arrow (first)
 import Data.Ratio
 import Foreign.C.Types (CFloat, CDouble)
+import Data.Kind
 -- import Data.Either
 
 import Data.VectorSpace
@@ -36,7 +37,7 @@ import GHC.Generics (Generic, (:*:)(..))
 
 class VectorSpace v => HasBasis v where
   -- | Representation of the canonical basis for @v@
-  type Basis v :: *
+  type Basis v :: Type
   type Basis v = Basis (VRep v)
   -- | Interpret basis rep as a vector
   basisValue   :: Basis v -> v

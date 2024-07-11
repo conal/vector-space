@@ -21,8 +21,9 @@ module Data.AffineSpace
   (
     AffineSpace(..), (.-^), distanceSq, distance, alerp, affineCombo
   ) where
-
+#if !MIN_VERSION_base(4,10,0)
 import Control.Applicative (liftA2)
+#endif
 import Data.Ratio
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Control.Arrow(first)
@@ -149,7 +150,7 @@ newtype GenericDiff p = GenericDiff (Diff (VRep p))
 
 instance AdditiveGroup (Diff (VRep p)) => AdditiveGroup (GenericDiff p)
 instance VectorSpace (Diff (VRep p)) => VectorSpace (GenericDiff p)
-instance InnerSpace (Diff (VRep p)) => InnerSpace (GenericDiff p)
+instance (AdditiveGroup (Scalar (Diff (VRep p))), InnerSpace (Diff (VRep p))) => InnerSpace (GenericDiff p)
 instance HasBasis (Diff (VRep p)) => HasBasis (GenericDiff p)
 
 data AffineDiffProductSpace f g p = AffineDiffProductSpace
@@ -160,7 +161,8 @@ instance ( AffineSpace (f p), AffineSpace (g p)
          , VectorSpace (Diff (f p)), VectorSpace (Diff (g p))
          , Scalar (Diff (f p)) ~ Scalar (Diff (g p)) )
     => VectorSpace (AffineDiffProductSpace f g p)
-instance ( AffineSpace (f p), AffineSpace (g p)
+instance ( AdditiveGroup (Scalar (Diff (g p)))
+         , AffineSpace (f p), AffineSpace (g p)
          , InnerSpace (Diff (f p)), InnerSpace (Diff (g p))
          , Scalar (Diff (f p)) ~ Scalar (Diff (g p))
          , Num (Scalar (Diff (f p))) )
