@@ -1,5 +1,5 @@
 Name:                vector-space
-Version:             0.17
+Version:             0.18
 Cabal-Version:       >= 1.10
 Synopsis:            Vector & affine spaces, linear maps, and derivatives
 Category:            math
