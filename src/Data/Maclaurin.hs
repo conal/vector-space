@@ -52,9 +52,7 @@ import Data.LinearMap
 
 import Data.Boolean
 
-#if MIN_VERSION_base(4,8,0)
 import Prelude hiding ((<*))
-#endif
 
 infixr 9 `D`
 -- | Tower of derivatives.
@@ -307,4 +305,3 @@ tripleD (u,v,w) = liftD3 (,,) u v w
 untripleD :: HasTrie (Basis a) => (a :> (b,c,d)) -> (a:>b, a:>c, a:>d)
 untripleD d =
   ((\ (a,_,_) -> a) <$>> d, (\ (_,b,_) -> b) <$>> d, (\ (_,_,c) -> c) <$>> d)
-
