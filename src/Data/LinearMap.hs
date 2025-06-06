@@ -25,7 +25,10 @@ module Data.LinearMap
   where
 
 #if !(MIN_VERSION_base(4,8,0))
-import Control.Applicative (Applicative, liftA2)
+import Control.Applicative (Applicative)
+#endif
+#if !(MIN_VERSION_base(4,18,0))
+import Control.Applicative (liftA2)
 #endif
 import Control.Applicative (liftA3)
 import Control.Arrow       (first,second)

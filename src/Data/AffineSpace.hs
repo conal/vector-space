@@ -21,7 +21,7 @@ module Data.AffineSpace
   (
     AffineSpace(..), (.-^), distanceSq, distance, alerp, affineCombo
   ) where
-#if !MIN_VERSION_base(4,10,0)
+#if !MIN_VERSION_base(4,18,0)
 import Control.Applicative (liftA2)
 #endif
 import Data.Ratio
