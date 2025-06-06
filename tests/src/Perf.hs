@@ -107,16 +107,16 @@ displaceV v s = v ^+^ s *^ normal v
 ------------------------------------------------------------------------------
 
 surfs3 :: [(Surf ((Double,Double) :> Double),String)]
-surfs3 = [ (displace surf hmap,m1 ++ " `displace` " ++ m2) 
-	 | (surf,m1) <- surfs2
-	 , (hmap,m2) <- hmaps
-	 ]
+surfs3 = [ (displace surf hmap,m1 ++ " `displace` " ++ m2)
+         | (surf,m1) <- surfs2
+         , (hmap,m2) <- hmaps
+         ]
 
 surfs2 :: [(Surf ((Double,Double) :> Double),String)]
-surfs2 = [ (displace surf hmap,m1 ++ " `displace` " ++ m2) 
-	 | (surf,m1) <- surfs
-	 , (hmap,m2) <- hmaps
-	 ]
+surfs2 = [ (displace surf hmap,m1 ++ " `displace` " ++ m2)
+         | (surf,m1) <- surfs
+         , (hmap,m2) <- hmaps
+         ]
 
 surfs :: [(Surf ((Double,Double) :> Double),String)]
 surfs =
@@ -125,32 +125,32 @@ surfs =
   ]
 
 hmaps :: [(HeightField ((Double,Double) :> Double),String)]
-hmaps = 
+hmaps =
   [ (\ (_,_) -> 0,"flat")
   , (\ (u,v) -> cosU u * sinU v,"eggcrate")
   ]
 
 main :: IO ()
-main = do 
-	let loop msg fun t count (points:pss) = do
-		sequence_ [ p1 `seq` p2 `seq` p3 `seq` n1 `seq` n2 `seq` n3 `seq` return ()
-        	          | (x,y) <- points
-		          , let ((p1,p2,p3),(n1,n2,n3)) = vsurf fun (x,y) ]
-		diff <- currRelTime t
---		print diff
-		if diff > 2
-		  then do let count' = count + length points
-			  putStrLn $ "Sample count rate for " ++ msg ++ " is " ++ show (fromIntegral count' / diff) ++ " (total count = " ++ show count' ++ ")"
-			  return ()
-		  else loop msg fun t (count + length points) pss
-	    loop _ _ _ _ _ = return ()
+main = do
+        let loop msg fun t count (points:pss) = do
+                sequence_ [ p1 `seq` p2 `seq` p3 `seq` n1 `seq` n2 `seq` n3 `seq` return ()
+                          | (x,y) <- points
+                          , let ((p1,p2,p3),(n1,n2,n3)) = vsurf fun (x,y) ]
+                diff <- currRelTime t
+--              print diff
+                if diff > 2
+                  then do let count' = count + length points
+                          putStrLn $ "Sample count rate for " ++ msg ++ " is " ++ show (fromIntegral count' / diff) ++ " (total count = " ++ show count' ++ ")"
+                          return ()
+                  else loop msg fun t (count + length points) pss
+            loop _ _ _ _ _ = return ()
 
-	let samples = samples_2d
+        let samples = samples_2d
 
-	sequence_ [ do t <- getClockTime
-		       loop msg fun t 0 samples
-		  | (fun,msg) <- concat [ surfs, surfs, surfs, surfs2, surfs3 ]
-	 	  ]
+        sequence_ [ do t <- getClockTime
+                       loop msg fun t 0 samples
+                  | (fun,msg) <- concat [ surfs, surfs, surfs, surfs2, surfs3 ]
+                  ]
 
 currRelTime :: ClockTime -> IO Double
 currRelTime (TOD sec0 pico0) = fmap delta getClockTime
@@ -168,14 +168,14 @@ type SurfPt s = (s,s) :> (s,s,s)
 toVN3 :: (HasBasis s s, Basis s ~ (), Floating s, InnerSpace s s)
          => SurfPt s -> ((s,s,s),(s,s,s))
 toVN3 v = ( powVal v
-	  , powVal (normal v)
-	  )
+          , powVal (normal v)
+          )
 vector3D :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s) => (a :> s,a :> s,a :> s) -> (a :> (s,s,s))
 vector3D (u,v,w) = liftD3 (,,) u v w
-unvector2D :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s) => (a :> (s,s)) -> (a :> s,a :> s) 
+unvector2D :: (HasBasis a s, HasTrie (Basis a), VectorSpace s s) => (a :> (s,s)) -> (a :> s,a :> s)
 unvector2D d = ( (\ (x,_) -> x) <$>> d
-	       , (\ (_,y) -> y) <$>> d
-	       )
+               , (\ (_,y) -> y) <$>> d
+               )
 
 ------------------------------------------------------------------------------
 
@@ -185,19 +185,19 @@ between xs = [ (n + m) / 2 | (n,m) <- zip xs (tail xs) ]
 samples_1d :: [[Double]]
 samples_1d = fn [0,1]
      where
-	fn :: [Double] -> [[Double]]
-	fn points = points : fn (sort (points ++ between points))
+        fn :: [Double] -> [[Double]]
+        fn points = points : fn (sort (points ++ between points))
 
 samples_2d :: [[(Double,Double)]]
-samples_2d =  [ [ (a,b) 
-		| a <- sam
-		, b <- sam
-		]
-  	      | sam <- samples_1d
-	      ]
+samples_2d =  [ [ (a,b)
+                | a <- sam
+                , b <- sam
+                ]
+              | sam <- samples_1d
+              ]
 
 -- only allows new points through.
 progressive_filter :: (Ord a) => [[a]] -> [[a]]
 progressive_filter xs = head sorted_xs : [ y \\ x | (x,y) <- zip sorted_xs (tail sorted_xs) ]
   where
-	sorted_xs = map sort xs
+        sorted_xs = map sort xs

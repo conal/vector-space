@@ -10,10 +10,10 @@
 -- Module      :  Data.AffineSpace
 -- Copyright   :  (c) Conal Elliott and Andy J Gill 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net, andygill@ku.edu
 -- Stability   :  experimental
--- 
+--
 -- Affine spaces.
 ----------------------------------------------------------------------
 
@@ -36,9 +36,9 @@ import qualified GHC.Generics as Gnrx
 import GHC.Generics (Generic, (:*:)(..))
 
 -- Through 0.8.4, I used the following fixities.
--- 
+--
 --   infix 4 .+^, .-^, .-.
--- 
+--
 -- Changed in 0.8.5 to match precedence of + and -, and to associate usefully.
 -- Thanks to Ben Gamari for suggesting left-associativity.
 

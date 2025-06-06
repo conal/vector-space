@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeOperators
-           , TypeFamilies, TypeSynonymInstances 
+           , TypeFamilies, TypeSynonymInstances
            , UndecidableInstances  #-}
 {-# OPTIONS_GHC -Wall #-}
 ----------------------------------------------------------------------
@@ -7,10 +7,10 @@
 -- Module      :  Data.Cross
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
--- 
+--
 -- Cross products and normals
 ----------------------------------------------------------------------
 
@@ -59,12 +59,12 @@ instance (HasBasis s, HasTrie (Basis s), Basis s ~ ()) =>
 
 -- When I use atBasis (from LinearMap) instead of the more liberally-typed
 -- atB (below), I get a type error:
--- 
+--
 --     Couldn't match expected type `Basis a1' against inferred type `()'
 --       Expected type: a1 :-* (s :> Two s)
 --       Inferred type: s  :-* (s :> Two s)
 --     In the first argument of `atB', namely `derivative v'
--- 
+--
 -- I think this type error is a GHC bug, but I'm not sure.
 
 -- atB :: (AdditiveGroup b, HasTrie a) => Maybe (a :->: b) -> a -> b

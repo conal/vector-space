@@ -19,10 +19,10 @@
 -- Module      :  Data.Maclaurin
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
--- 
+--
 -- Infinite derivative towers via linear maps, using the Maclaurin
 -- representation.  See blog posts <http://conal.net/blog/tag/derivative/>.
 ----------------------------------------------------------------------
@@ -38,7 +38,7 @@ module Data.Maclaurin
   , (>-<)
   -- * Misc
   , pairD, unpairD, tripleD, untripleD
-  ) 
+  )
     where
 
 -- import Control.Applicative (liftA2)
@@ -104,7 +104,7 @@ liftD3 f = lf
 -- (<*>)?  If so, can the speed be as good?
 
 -- liftD2 f a b = (f <$>> a) <*>> b
--- 
+--
 -- liftD3 f a b c = liftD2 f a b <*>> c
 
 
@@ -126,13 +126,13 @@ linearD :: (HasBasis u, HasTrie (Basis u), AdditiveGroup v) =>
 
 -- HEY!  I think there's a hugely wasteful recomputation going on in
 -- 'linearD' above.  Note the definition of 'linear':
--- 
+--
 --     linear f = trie (f . basisValue)
--- 
+--
 -- Substituting,
--- 
+--
 --     linearD f u = f u `D` trie ((pureD . f) . basisValue)
--- 
+--
 -- The trie gets rebuilt for each @u@.
 
 -- Look for similar problems.
@@ -215,7 +215,7 @@ instance (HasBasis a, HasTrie (Basis a), AdditiveGroup u) => AdditiveGroup (a :>
 instance (HasBasis a, HasTrie (Basis a), VectorSpace u)
       => VectorSpace (a :> u) where
   type Scalar (a :> u) = (a :> Scalar u)
-  (*^) = distrib (*^)                     
+  (*^) = distrib (*^)
 
 instance ( InnerSpace u, s ~ Scalar u, AdditiveGroup s
          , HasBasis a, HasTrie (Basis a) ) =>

@@ -79,14 +79,14 @@ forkL :: (HasTrie (Basis a), HasBasis c, HasBasis d)
 forkL = (inLMap2.liftL2) (,)
 
 firstL  :: ( HasBasis u, HasBasis u', HasBasis v
-           , HasTrie (Basis u), HasTrie (Basis v) 
+           , HasTrie (Basis u), HasTrie (Basis v)
            , Scalar u ~ Scalar v, Scalar u ~ Scalar u'
            ) =>
            (u :-* u') -> ((u,v) :-* (u',v))
 firstL  = linear.first.lapply
 
 secondL :: ( HasBasis u, HasBasis v, HasBasis v'
-           , HasTrie (Basis u), HasTrie (Basis v) 
+           , HasTrie (Basis u), HasTrie (Basis v)
            , Scalar u ~ Scalar v, Scalar u ~ Scalar v'
            ) =>
            (v :-* v') -> ((u,v) :-* (u,v'))

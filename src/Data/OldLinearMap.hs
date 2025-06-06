@@ -7,10 +7,10 @@
 -- Module      :  Data.LinearMap
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
--- 
+--
 -- Linear maps
 ----------------------------------------------------------------------
 
@@ -57,7 +57,7 @@ type u :-* v = MSum (Basis u :->: v)
 -- ambiguity: u:-*v == u':-*v' does not imply that u==u', since Basis
 -- might map different types to the same basis (e.g., Float & Double).
 -- See <http://hackage.haskell.org/trac/ghc/ticket/1897>
--- 
+--
 -- Work in progress.  See NewLinearMap.hs
 
 
@@ -94,7 +94,7 @@ lapply' tr = linearCombo . fmap (first (untrie tr)) . decompose
 
 
 -- Identity linear map
-idL :: (HasBasis u, HasTrie (Basis u)) => 
+idL :: (HasBasis u, HasTrie (Basis u)) =>
        u :-* u
 idL = linear id
 
@@ -108,7 +108,7 @@ infixr 9 *.*
          (v :-* w) -> (u :-* v) -> (u :-* w)
 
 -- Simple definition, but only optimizes out uv == zero
--- 
+--
 -- (*.*) vw = (fmap.fmap) (lapply vw)
 
 -- Instead, use Nothing/zero if /either/ map is zeroV (exploiting linearity
@@ -132,11 +132,11 @@ infixr 9 *.*
 -- once per uv.  'untrie' can strip off all of its trie constructors.
 
 -- Less efficient definition:
--- 
+--
 --   vw `compL` uv = linear (lapply vw . lapply uv)
--- 
+--
 --   i.e., compL = inL2 (.)
--- 
+--
 -- The problem with these definitions is that basis elements get converted
 -- to values and then decomposed, followed by recombination of the
 -- results.

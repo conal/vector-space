@@ -9,10 +9,10 @@
 -- Module      :  Data.Basis
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
--- 
+--
 -- Basis of a vector space, as an associated type
 -- This module requires ghc-6.10 or later
 ----------------------------------------------------------------------
@@ -67,9 +67,9 @@ recompose = linearCombo . fmap (first basisValue)
 -- recompose ps = linearCombo (first basisValue <$> ps)
 
 -- I don't know how to define
--- 
+--
 --   recompose' :: HasBasis v => (Basis v -> Scalar v) -> v
--- 
+--
 -- However, I don't seem to use recompose anywhere.
 -- I don't even use basisValue or decompose.
 
@@ -128,12 +128,12 @@ nest3 (a,b,c) = (a,(b,c))
 
 
 -- Simpler but less efficient:
--- 
+--
 --   basisValue (a,b) a' | a == a'   = basisValue b
 --                       | otherwise = zeroV
 
 -- Just for pointless perversion points:
--- 
+--
 --   decompose' g = uncurry (\ a b -> decompose' (g a) b)
 --   decompose' g = uncurry (\ a -> decompose' (g a))
 --   decompose' g = uncurry (decompose' . g)
