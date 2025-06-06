@@ -10,9 +10,6 @@ Description:
   transformation rather than one of the common concrete representations
   (scalars, vectors, matrices, ...).
   .
-  /Warning/: this package depends on type families working fairly well,
-  requiring GHC version at least 6.9.
-  .
   Project wiki page: <http://haskell.org/haskellwiki/vector-space>
   .
   &#169; 2008-2012 by Conal Elliott; BSD3 license.
@@ -26,13 +23,14 @@ build-type:          Simple
 
 source-repository head
   type:     git
-  location: git://github.com/conal/vector-space.git
+  location: https://github.com/conal/vector-space.git
 
 Library
   default-language:  Haskell2010
   hs-Source-Dirs:      src
   Extensions:
-  Build-Depends:       base<5, MemoTrie >= 0.5
+  Build-Depends:       base >= 4.9 && <5
+                     , MemoTrie >= 0.5
                      , Boolean >= 0.1.0
                      , NumInstances >= 1.0
   Exposed-Modules:
@@ -47,9 +45,3 @@ Library
                      Data.AffineSpace
   Other-Modules:
                      Data.VectorSpace.Generic
-
-  -- This library relies on type families working as well as in 6.10.
-  if  impl(ghc < 6.10) { buildable: False }
-  if !impl(ghc >= 7.6) { Build-Depends: ghc-prim >= 0.2 }
-  if !impl(ghc >= 7.9) { Build-Depends: void >= 0.4 }
-  if !impl(ghc >= 8.0) { Build-Depends: semigroups >= 0.16 }
