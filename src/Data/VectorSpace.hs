@@ -32,7 +32,7 @@ module Data.VectorSpace
   , InnerSpace(..)
   , lerp, linearCombo, magnitudeSq, magnitude, normalized, project
   ) where
-#if !(MIN_VERSION_base(4,8,0))
+#if !(MIN_VERSION_base(4,18,0))
 import Control.Applicative (liftA2)
 #endif
 import Data.Complex hiding (magnitude)

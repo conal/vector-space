@@ -24,8 +24,8 @@ module Data.LinearMap
    )
   where
 
-#if !(MIN_VERSION_base(4,8,0))
-import Control.Applicative (Applicative, liftA2)
+#if !(MIN_VERSION_base(4,18,0))
+import Control.Applicative (liftA2)
 #endif
 import Control.Applicative (liftA3)
 import Control.Arrow       (first,second)
@@ -79,14 +79,14 @@ forkL :: (HasTrie (Basis a), HasBasis c, HasBasis d)
 forkL = (inLMap2.liftL2) (,)
 
 firstL  :: ( HasBasis u, HasBasis u', HasBasis v
-           , HasTrie (Basis u), HasTrie (Basis v) 
+           , HasTrie (Basis u), HasTrie (Basis v)
            , Scalar u ~ Scalar v, Scalar u ~ Scalar u'
            ) =>
            (u :-* u') -> ((u,v) :-* (u',v))
 firstL  = linear.first.lapply
 
 secondL :: ( HasBasis u, HasBasis v, HasBasis v'
-           , HasTrie (Basis u), HasTrie (Basis v) 
+           , HasTrie (Basis u), HasTrie (Basis v)
            , Scalar u ~ Scalar v, Scalar u ~ Scalar v'
            ) =>
            (v :-* v') -> ((u,v) :-* (u,v'))

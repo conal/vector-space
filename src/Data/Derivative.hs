@@ -3,7 +3,7 @@
 -- Module      :  Data.Derivative
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
 --

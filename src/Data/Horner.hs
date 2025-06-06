@@ -6,10 +6,10 @@
 -- Module      :  Data.Horner
 -- Copyright   :  (c) Conal Elliott 2008
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  conal@conal.net
 -- Stability   :  experimental
--- 
+--
 -- Infinite derivative towers via linear maps, using the Horner
 -- representation.  See blog posts <http://conal.net/blog/tag/derivative/>.
 ----------------------------------------------------------------------
@@ -35,7 +35,7 @@ infixr 9 `H`, @.
 infix  0 >-<
 
 -- | Power series
--- 
+--
 -- Warning, the 'Applicative' instance is missing its 'pure' (due to a
 -- 'VectorSpace' type constraint).  Use 'dConst' instead.
 data a :> b = H b (a :-* (a :> b))
@@ -51,7 +51,7 @@ apPow (f : fs) (b0 `H` bt) = H (f b0) (apPow fs . bt)
 
 -- Count.  Avoids the 'Enum' requirement of [1..]
 from :: Num s => s -> [s]
-from n = n : from (n+1) 
+from n = n : from (n+1)
 
 -- | Derivative of a power series
 derivative :: (VectorSpace b s, Num s) =>
@@ -67,9 +67,9 @@ integral b0 bt = H b0 (apPow (((*^).recip) <$> from 1) . bt)
 type a :~> b = a -> (a:>b)
 
 -- So we could define
--- 
+--
 --   data a :> b = H b (a :~> b)
--- 
+--
 -- with the restriction that the a :~> b is linear
 
 instance Functor ((:>) a) where
@@ -135,7 +135,7 @@ distrib op = opD
 
 
 -- Equivalently,
--- 
+--
 --   distrib op = opD
 --    where
 --      opD u@(H u0 u') v@(H v0 v') =
@@ -181,7 +181,7 @@ f >-< f' = \ u@(H u0 _) -> integral (f u0) ((f' u *^) . derivative u)
 -- TODO: consider eliminating @Num s@.  I just need a multiplicative unit.
 
 -- Equivalently:
--- 
+--
 --   f >-< f' = \ u@(H u0 u') -> H (f u0) (\ da -> f' u *^ u' da)
 
 instance (Fractional b, VectorSpace b b) => Num (a:>b) where
@@ -189,7 +189,7 @@ instance (Fractional b, VectorSpace b b) => Num (a:>b) where
   (+) = liftA2  (+)
   (-) = liftA2  (-)
   (*) = distrib (*)
-  
+
   negate = negate >-< -1
   abs    = abs    >-< signum
   signum = signum >-< 0  -- derivative wrong at zero
