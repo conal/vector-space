@@ -64,6 +64,13 @@ instance (HasTrie (Basis u), VectorSpace v) =>
 -- in the constraint: HasTrie (Basis u)
 -- (Use UndecidableInstances to permit this)
 
+instance (Eq (Basis u), HasTrie (Basis u), HasBasis v, AdditiveGroup (Scalar v)) =>
+         HasBasis (u :-* v) where
+  type Basis (u :-* v) = (Basis u, Basis v)
+  basisValue = LMap . fmap Sum . basisValue
+  decompose = decompose . fmap getSum . unLMap
+  decompose' = decompose' . fmap getSum . unLMap
+
 exlL :: ( HasBasis a, HasTrie (Basis a), HasBasis b, HasTrie (Basis b)
         , Scalar a ~ Scalar b )
      => (a,b) :-* a
