@@ -24,6 +24,7 @@ module Data.AffineSpace
 #if !MIN_VERSION_base(4,18,0)
 import Control.Applicative (liftA2)
 #endif
+import Data.Char (ord, chr)
 import Data.Ratio
 import Foreign.C.Types (CSChar, CInt, CShort, CLong, CLLong, CIntMax, CFloat, CDouble)
 import Control.Arrow(first)
@@ -126,6 +127,13 @@ ScalarType(CIntMax)
 ScalarType(CDouble)
 ScalarType(CFloat)
 ScalarTypeCon(Integral a,Ratio a)
+
+-- | Interpret 'Char' as an affine space with @'\NUL'@ as the base.
+--   Differences are computed on the result of 'ord'.
+instance AffineSpace Char where
+  type Diff Char = Int
+  a .-. b = ord a - ord b
+  a .+^ d = chr $ ord a + d
 
 instance (AffineSpace p, AffineSpace q) => AffineSpace (p,q) where
   type Diff (p,q)   = (Diff p, Diff q)
